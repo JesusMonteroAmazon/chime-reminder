@@ -56,11 +56,12 @@ def format_message(sections):
     if sections['joke']:
         message += "😄 **Joke of the Day**\n"
         for item in sections['joke']:
-            if ':' in item:em:
+            if ':' in item:
                 _, joke = item.split(':', 1)
                 message += f"• {joke.strip()}\n"
         message += "\n"
 
+  
     # QA Tip Section
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
@@ -75,14 +76,14 @@ def format_message(sections):
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
             if ':' in item:
-                _, reminder = item.split(':(':', 1)
+                _, reminder = item.split(':', 1)
                 message += f"• {reminder.strip()}\n"
         message += "\n"
 
     # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
-        for item em in sections['metrics']:
+        for item in sections['metrics']:
             if ':' in item:
                 key, value = item.split(':', 1)
                 if 'remember' in key.lower():
@@ -90,8 +91,6 @@ def format_message(sections):
                 else:
                     message += f"• *{key.strip()}*: {value.strip()}\n"
         message += "\n"
-
-"
 
     # Add footer
     message += "-------------------\n"
