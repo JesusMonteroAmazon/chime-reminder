@@ -37,7 +37,7 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
-        for li in main_ul.find_all('li', recursive=True):  # Changed to recursive=True
+        for li in main_ul.find_all('li', recursive=True):
             text = li.get_text(strip=True)
             print(f"Processing list item: {text}")
             
@@ -51,7 +51,7 @@ def extract_content(html_content):
             elif 'important reminder' in text.lower():
                 sections['important'].append(text)
                 print(f"Added to important section: {text}")
-            elif 'metrics goals' in text.lower() or any(x in text.lower() for x in ['acht:', 'ptl:', 'qa:']):
+            elif any(x in text.lower() for x in ['metrics goals:', 'acht:', 'ptl:', 'qa:', 'remember']):
                 sections['metrics'].append(text)
                 print(f"Added to metrics section: {text}")
     else:
@@ -86,7 +86,7 @@ def format_message(sections):
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if ':' in item:
+            if ':' :' in item:
                 _, reminder = item.split(':', 1)
                 message += f"• {reminder.strip()}\n"
         message += "\n"
@@ -94,23 +94,24 @@ def format_message(sections):
     # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
-        metrics_text = ""
-        link_text = ""
+           
+        # First, handle QA, ACHT, and PTL metrics
+        for item in sections['metrics']:
+            if any(x in item.lower() for x in ['qa:', 'acht:', 'ptl:']):
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    # Remove trailing commas and clean up the value
+                    value = value.strip().rstrip(',').strip()
+                    if not key.lower().startswith('metrics'):
+                        message += f"• *{key.strip()}*: {value}\n"
         
+        # Then, handle the link separately
         for item in sections['metrics']:
             if 'remember' in item.lower():
-                # Handle the link separately
-                key, value = item.split(':', 1)
-                link_text = f"🔗 {value.strip()}"
-            elif ':' in item:
-                key, value = item.split(':', 1)
-                # Remove trailing commas from values
-                value = value.strip().rstrip(',')
-                metrics_text += f"• *{key.strip()}*: {value}\n"
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    message += f"\n🔗 {value.strip()}\n"
         
-        message += metrics_text
-        if link_text:
-            message += f"\n{link_text}\n"
         message += "\n"
 
     # Add footer
