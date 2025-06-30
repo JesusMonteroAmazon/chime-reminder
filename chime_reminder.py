@@ -27,74 +27,73 @@ class SimpleQuipClient:
 def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
-    sections = {}
-    current_section = "General"
+    sections = {
+        'joke': [],
+        'qa_tip': [],
+        'important': [],
+        'metrics': []
+    }
 
-    print(f"Raw HTML content: {html_content}")
+    # Find all list items
+    for item in soup.find_all('li'):
+        text = item.get_text(strip=True)
+        if 'joke of the day' in text.lower():
+            sections['joke'].append(text)
+        elif 'qa tip' in text.lower():
+            sections['qa_tip'].append(text)
+        elif 'important reminder' in text.lower():
+            sections['important'].append(text)
+        elif any(x in text.lower() for x in ['qa:', 'acht:', 'ptl:', 'remember']):
+            sections['metrics'].append(text)
 
-    for element in soup.find_all(['p', 'li']):
-        print(f"Processing element: {element.name} - {element.get_text(strip=True)}")
-        text = element.get_text(strip=True)
-        if not text:
-            continue
-
-        if element.name == 'p':
-            current_section = text
-            sections[current_section] = []
-            print(f"New section: {current_section}")
-        elif element.name == 'li':
-            if ':' in text:
-                key, value = text.split(':', 1)
-                sections[current_section].append((key.strip(), value.strip()))
-                print(f"Added to {current_section}: {key.strip()} - {value.strip()}")
-            else:
-                sections[current_section].append(("", text))
-                print(f"Added to {current_section}: {text}")
-
-    print(f"Extracted sections: {sections}")
     return sections
 
 def format_message(sections):
     print("Formatting message...")
     message = "🔔 **Daily Team Reminder**\n\n"
 
-    for section, items in sections.items():
-        print(f"Processing section: {section}")
-        if section.lower() == "this is the reminder":
-            continue
+    # Joke Section
+    if sections['joke']:
+        message += "😄 **Joke of the Day**\n"
+        for item in sections['joke']:
+            if ':' in item:em:
+                _, joke = item.split(':', 1)
+                message += f"• {joke.strip()}\n"
+        message += "\n"
 
-        if "joke" in section.lower():
-            message += "😄 **Joke of the Day**\n"
-        elif "qa tip" in section.lower():
-            message += "💡 **QA Tip of the Day**\n"
-        elif "important" in section.lower():
-            message += "⚠️ **Important Reminder**\n"
-        elif "metrics" in section.lower():
-            messagsage += "📊 **Metrics Goals**\n"
-        else:
-            message += f"📌 **{section}**\n"
+    # QA Tip Section
+    if sections['qa_tip']:
+        message += "💡 **QA Tip of the Day**\n"
+        for item in sections['qa_tip']:
+            if ':' in item:
+                _, tip = item.split(':', 1)
+                message += f"• {tip.strip()}\n"
+        message += "\n"
 
-        for key, value in items:
-            print(f"Processing item: {key} - {value}")
-            if key.lower() == "joke of the day":
-                message += f"• {value}\n"
-            elif key.lower() == "qa tip of the day":
-                message += f"• {value}\n"
-            elif key.lower() == "important reminder":
-                message += f"• {value}\n"
-            elif key.lower() == "metrics goals":
-                continue  # Skip the header line
-            elif key:
-                if "link" in key.lower():
-                    message += f"🔗 *{key}*: {value}\n"
+    # Important Reminder Section
+    if sections['important']:
+        message += "⚠️ **Important Reminder**\n"
+        for item in sections['important']:
+            if ':' in item:
+                _, reminder = item.split(':(':', 1)
+                message += f"• {reminder.strip()}\n"
+        message += "\n"
+
+    # Metrics Section
+    if sections['metrics']:
+        message += "📊 **Metrics Goals**\n"
+        for item em in sections['metrics']:
+            if ':' in item:
+                key, value = item.split(':', 1)
+                if 'remember' in key.lower():
+                    message += f"🔗 *{key.strip()}*: {value.strip()}\n"
                 else:
-                    message += f"• *{key}*: {value}\n"
-            else:
-                message += f"• {value}\n"
+                    message += f"• *{key.strip()}*: {value.strip()}\n"
+        message += "\n"
 
-        message += "\n"  # Add extra spacing between sections
+"
 
-    # Add a footer
+    # Add footer
     message += "-------------------\n"
     message += "Have a great day! 🌟"
 
