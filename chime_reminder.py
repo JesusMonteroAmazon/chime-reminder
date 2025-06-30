@@ -88,7 +88,7 @@ def format_message(sections):
         for item in sections['important']:
             if ':' in item:
                 _, reminder = item.split(':', 1)
-                message += f"• {reminder.strip()p()}\n"
+                message += f"• {reminder.strip()}\n"
         message += "\n"
 
     # Metrics Section
