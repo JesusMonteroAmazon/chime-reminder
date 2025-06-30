@@ -17,10 +17,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install reqrequests beautifulsoup4
+        pip install requests beautifulsoup4
+    - name: List directory contents
+      run: ls -la
     - name: Run reminder script
       env:
         CHIME_WEBHOOK_URL: ${{ secrets.CHIME_WEBHOOK_URL }}
         QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
         QUIP_DOC_ID: ${{ secrets.QUIP_DOC_ID }}
-      run: python chime_reminder.py
+      run: |
+        echo "Running chime_reminder.py"
+        python chime_reminder.py
