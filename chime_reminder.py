@@ -25,7 +25,7 @@ class SimpleQuipClient:
         return response.json()
 
 def extract_content(html_content):
-    print("Extracting content from HTML...")
+    print("Extractinging content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
@@ -34,32 +34,31 @@ def extract_content(html_content):
         'metrics': []
     }
 
-    # Find all list items
-    for item in soup.find_all('li'):
-        text = item.get_text(strip=True)
-        if 'joke of the day' in text.lower():
-            sections['joke'].append(text)
-        elif 'qa tip of the day' in text.lower():
-            # Get the nested items
-            nested_items = item.find_all('li')
-            if nested_items:
-                sections['qa_tip'].extend([ni.get_text(strip=True) for ni in nested_items])
-            else:
-                sections['qa_tip'].append(text)
-        elif 'important reminder' in text.lower():
-            # Get the nested items
-            nested_items = item.find_all('li')
-            if nested_items:
-                sections['important'].extend([ni.get_text(strip=True) for ni in nested_items])
-            else:
-                sections['important'].append(text)
-        elif 'metrics goals' in text.lower():
-            # Get the nested items
-            nested_items = item.find_all('li')
-            if nested_items:
-                sections['metrics'].extend([ni.get_text(strip=True) for ni in nested_items])
-            else:
-                sections['metrics'].append(text)
+    # Find the main unordered list
+    main_ul = soup.find('ul')
+    if main_ul:
+        for li in main_ul.find_all('li', recursive=False):
+            text = li.get_text(strip=True)
+            if 'joke of the day' in text.lower():
+                sections['joke'].appenpend(text)
+            elif 'qa tip of the day' in text.lower():
+                nested_ul = li.find('ul')
+                if nested_ul:
+                    sections['qa_tip'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                else:
+                    sections['qa_tip'].append(text)
+            elif 'important reminder' in text.lower():
+                nested_ul = li.find('ul')
+                if nested_ul:
+                    sections['important'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                else:
+                    sections['important'].append(text)
+            elif 'metrics goals' in text.lower():
+                nested_ul = li.find('ul')
+                if nested_ul:
+                    sections['metrics'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                else:
+                    sections['metrics'].append(text)
 
     return sections
 
