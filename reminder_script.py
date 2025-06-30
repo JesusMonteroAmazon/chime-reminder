@@ -3,9 +3,9 @@ import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-CHIME_WEBHOOK_URL = os.environ['https://hooks.chime.aws/incomingwebhooks/c9665ec1-b8b2-4187-8458-eb9d3c9df3cd?token=ZkR6WUc3ODV8MXxQdVlFOEdjMFBKN0pPUVc0Sk16SmstRVFFRlRFZHFJN1hIVDd3ckR3a1JV']
-QUIP_API_TOKEN = os.environ['WllKOU1BeHkyN24=|1782847440|pCe9fV0OlHS1mc7eiciVoGlQx9AirDs6aVj18Tia5ZY=']
-QUIP_DOC_ID = os.environ['4m1YADb9L7YG']
+CHIME_WEBHOOK_URL = os.environ['CHIME_WEBHOOK_URL']
+QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
+QUIP_DOC_ID = os.environ['QUIP_DOC_ID']
 
 class SimpleQuipClient:
     def __init__(self, access_token):
