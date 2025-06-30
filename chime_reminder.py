@@ -30,7 +30,7 @@ def extract_content(html_content):
     sections = {
         'joke': [],
         'qa_tip': [],
-        'important': [],
+        'important': [: [],
         'metrics': []
     }
 
@@ -39,12 +39,27 @@ def extract_content(html_content):
         text = item.get_text(strip=True)
         if 'joke of the day' in text.lower():
             sections['joke'].append(text)
-        elif 'qa tip' in text.lower():
-            sections['qa_tip'].append(text)
+        elif 'qa tip of the day' in text.lower():
+            # Get the nested items
+            nested_items = item.find_all('li')
+            if nested_items:
+                sections['qa_tip'].extend([ni.get_text(strip=True) for ni in nested_items])
+            else:
+                sections['qa_tip'].append(text)
         elif 'important reminder' in text.lower():
-            sections['important'].append(text)
-        elif any(x in text.lower() for x in ['qa:', 'acht:', 'ptl:', 'remember']):
-            sections['metrics'].append(text)
+            # Get the nested items
+            nested_items = item.find_all('li')
+            if nested_items:
+                sections['important'].extend([ni.get_text(strip=True) for ni in nested_items])
+            else:
+                sections['important'].append(text)
+        elif 'metrics goals' in text.lower():
+            # Get the nested items
+            nested_items = item.find_all('li')
+            if nested_items:
+                sections['metrics'].extend([ni.get_text(strip=True) for ni in nested_items])
+            else:
+                sections['metrics'].append(text)
 
     return sections
 
@@ -61,23 +76,18 @@ def format_message(sections):
                 message += f"• {joke.strip()}\n"
         message += "\n"
 
-  
     # QA Tip Section
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            if ':' in item:
-                _, tip = item.split(':', 1)
-                message += f"• {tip.strip()}\n"
+            message += f"• {item}\n"
         message += "\n"
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if ':' in item:
-                _, reminder = item.split(':', 1)
-                message += f"• {reminder.strip()}\n"
+            message += f"• {item}\n"
         message += "\n"
 
     # Metrics Section
@@ -90,6 +100,8 @@ def format_message(sections):
                     message += f"🔗 *{key.strip()}*: {value.strip()}\n"
                 else:
                     message += f"• *{key.strip()}*: {value.strip()}\n"
+            else:
+                message += f"• {item}\n"
         message += "\n"
 
     # Add footer
