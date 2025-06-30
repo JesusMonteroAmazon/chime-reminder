@@ -25,35 +25,49 @@ class SimpleQuipClient:
         return response.json()
 
 def extract_content(html_content):
-    print("Extracting content from HTML...")
+    print(nt("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
         'qa_tip': [],
-        'important': [],
+        'imporportant': [],
         'metrics': []
     }
 
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
-        for li in main_ul.find_all('li', recursive=True):
+        for li in main_ul.find_all('li', recursive=False):  # Only top-level items
             text = li.get_text(strip=True)
             print(f"Processing list item: {text}")
             
-            # Handle main items and their nested content
             if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
             elif 'qa tip of the day' in text.lower():
-                sections['qa_tip'].append(text)
-                print(f"Added to qa_tip section: {text}")
+                nested_ul = li.find('ul')
+                if nested_ul:
+                    sections['qa_tip'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                    print(f"Added to qa_tip section (nested): {sections['qa_tip']}")
+                else:
+                    sections['qa_tip'].append(text)
+                    print(f"Added to qa_tip section: {text}")
             elif 'important reminder' in text.lower():
-                sections['important'].append(text)
-                print(f"Added to important section: {text}")
-            elif any(x in text.lower() for x in ['metrics goals:', 'acht:', 'ptl:', 'qa:', 'remember']):
-                sections['metrics'].append(text)
-                print(f"Added to metrics section: {text}")
+                nested_ul = li.find('ul')
+                if nested_ul:
+                    sections['important'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                    print(f"Added to important section (nested): {sections['important']}")
+                else:
+                    sections['important'].append(text)
+                    print(f"Added to important section: {text}")
+            elif 'metrics goals' in text.lower():
+                nested_ul = li.find('ul')
+                if nested_ul:
+                    sections['metrics'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                    print(f"Added to metrics section (nested): {sections['metrics']}")
+                else:
+                    sections['metrics'].append(text)
+                    print(f"Added to metrics section: {text}")
     else:
         print("No main unordered list found in the HTML content")
 
@@ -77,40 +91,35 @@ def format_message(sections):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            if ':' in item:
-                _, tip = item.split(':', 1)
-                message += f"• {tip.strip()}\n"
+            message += f"• {item.strip()}\n"
         message += "\n"
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if ':' in item:
-                _, reminder = item.split(':', 1)
-                message += f"• {reminder.strip()}\n"
+            message += f"• {item.strip()}\n"
         message += "\n"
 
     # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
+        link_text = ""
         
-        # First, handle QA, ACHT, and PTL metrics
         for item in sections['metrics']:
-            if any(x in item.lower() for x in ['qa:', 'acht:', 'ptl:']):
+            if 'remember' in item.lower():
+                # Handle the link separately
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    # Remove trailing commas and clean up the value
-                    value = value.strip().rstrip(',').strip()
-                    if not key.lower().startswith('metrics'):
-                        message += f"• *{key.strip()}*: {value}\n"
-        
-        # Then, handle the link separately
-        for item in sections['metrics']:
-            if 'remember' in item.lower() and ':' in item:
+                    link_text = f"🔗 {value.strip()}"
+            elif ':' in item:
                 key, value = item.split(':', 1)
-                message += f"\n🔗 {value.strip()}\n"
+                # Remove trailing commas and clean up the value
+                value = value.strip().rstrip(',').strip()
+                message += f"• *{key.strip()}*: {value}\n"
         
+        if link_text:
+            message += f"\n{link_text}\n"
         message += "\n"
 
     # Add footer
