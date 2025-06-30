@@ -52,7 +52,7 @@ def extract_content(html_content):
                 else:
                     sections['qa_tip'].append(text)
                     print(f"Added to qa_tip section: {text}")
-            elif 'important reminder' in text.lower():
+            elif 'importartant reminder' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
                     nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
@@ -61,7 +61,7 @@ def extract_content(html_content):
                 else:
                     sections['important'].append(text)
                     print(f"Added to important section: {text}")
-            elif 'me'metrics goals' in text.lower():
+            elif 'metrics goals' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
                     nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
