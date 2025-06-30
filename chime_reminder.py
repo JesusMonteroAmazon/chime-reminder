@@ -25,7 +25,7 @@ class SimpleQuipClient:
         return response.json()
 
 def extract_content(html_content):
-    print("Extractinging content from HTML...")
+    print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
@@ -39,27 +39,41 @@ def extract_content(html_content):
     if main_ul:
         for li in main_ul.find_all('li', recursive=False):
             text = li.get_text(strip=True)
+            print(f"Processing list item: {text}")
             if 'joke of the day' in text.lower():
-                sections['joke'].appenpend(text)
+                sections['joke'].append(text)
+                print(f"Added to joke section: {text}")
             elif 'qa tip of the day' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
-                    sections['qa_tip'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
+                    sections['qa_tip'].extend(nested_items)
+                    print(f"Added to qa_tip section (nested): {nested_items}")
                 else:
                     sections['qa_tip'].append(text)
+                    print(f"Added to qa_tip section: {text}")
             elif 'important reminder' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
-                    sections['important'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
+                    sections['important'].extend(nested_items)
+                    print(f"Added to important section (nested): {nested_items}")
                 else:
                     sections['important'].append(text)
-            elif 'metrics goals' in text.lower():
+                    print(f"Added to important section: {text}")
+            elif 'me'metrics goals' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
-                    sections['metrics'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
+                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
+                    sections['metrics'].extend(nested_items)
+                    print(f"Added to metrics section (nested): {nested_items}")
                 else:
                     sections['metrics'].append(text)
+                    print(f"Added to metrics section: {text}")
+    else:
+        print("No main unordered list found in the HTML content")
 
+    print(f"Extracted sections: {sections}")
     return sections
 
 def format_message(sections):
@@ -122,9 +136,9 @@ def send_reminder():
         thread = quip_client.get_thread(QUIP_DOC_ID)
         content = thread['html']
         
-        sections = extract_content(content)  # Fixed the function name here
+        sections = extract_content(content)
         
-        if not sections:
+        if not any(sections.values()):
             print(f"{datetime.now()}: No content found in the document")
             return
             
