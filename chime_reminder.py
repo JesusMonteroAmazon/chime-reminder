@@ -51,19 +51,49 @@ def extract_content(html_content):
 
 def format_message(sections):
     print("Formatting message...")
-    message = "🔔 **Daily Reminder**\n\n"
+    message = "🔔 **Daily Team Reminder**\n\n"
 
     for section, items in sections.items():
         if section.lower() == "this is the reminder":
             continue
-        message += f"**{section}**\n"
+            
+        # Add appropriate icons based on section
+        if "joke" in section.lower():
+            message += "😄 **Joke of the Day**\n"
+        elif "qa tip" in section.lower():
+            message += "💡 **QA Tip of the Day**\n"
+        elif "important" in section.lower():
+            message += "⚠️ **Important Reminder**\n"
+        elif "metrics" in section.lower():
+            message += "📊 **Metrics Goals**\n"
+        else:
+            message += f"📌 **{section}**\n"
+
         for item in items:
-            if ":" in item:
+            # Skip the section name if it appears in items
+            if item.lower() == section.lower():
+                continue
+                
+            if "joke of the day" in item.lower():
+                message += f"• {item.split(':', 1)[1].strip()}\n"
+            elif "qa tip" in item.lower():
+                message += f"• {item.split(':', 1)[1].strip() if ':' in item else item}\n"
+            elif "metrics goals" in item.lower():
+                continue  # Skip the header line
+            elif ": " in item:
                 key, value = item.split(":", 1)
-                message += f"• *{key.strip()}*: {value.strip()}\n"
+                if "link" in key.lower():
+                    message += f"🔗 *{key.strip()}*: {value.strip()}\n"
+                else:
+                    message += f"• *{key.strip()}*: {value.strip()}\n"
             else:
                 message += f"• {item}\n"
-        message += "\n"
+        
+        message += "\n"  # Add extra spacing between sections
+
+    # Add a footer
+    message += "-------------------\n"
+    message += "Have a great day! 🌟"
 
     print(f"Formatted message:\n{message}")
     return message.strip()
