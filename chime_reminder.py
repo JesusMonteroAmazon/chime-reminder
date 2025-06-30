@@ -25,12 +25,12 @@ class SimpleQuipClient:
         return response.json()
 
 def extract_content(html_content):
-    print(nt("Extracting content from HTML...")
+    print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
         'qa_tip': [],
-        'imporportant': [],
+        'important': [],
         'metrics': []
     }
 
