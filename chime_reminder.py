@@ -30,10 +30,10 @@ def extract_content(html_content):
     sections = {}
     current_section = "General"
 
-    # Print the raw HTML content for debugging
-    print(f"Raw HTML content: {html_content[:500]}...") # First 500 characters
+    print(f"Raw HTML content: {html_content}")
 
     for element in soup.find_all(['p', 'li']):
+        print(f"Processing element: {element.name} - {element.get_text(strip=True)}")
         text = element.get_text(strip=True)
         if not text:
             continue
@@ -41,13 +41,17 @@ def extract_content(html_content):
         if element.name == 'p':
             current_section = text
             sections[current_section] = []
+            print(f"New section: {current_section}")
         elif element.name == 'li':
             if ':' in text:
                 key, value = text.split(':', 1)
                 sections[current_section].append((key.strip(), value.strip()))
+                print(f"Added to {current_section}: {key.strip()} - {value.strip()}")
             else:
                 sections[current_section].append(("", text))
+                print(f"Added to {current_section}: {text}")
 
+    print(f"Extracted sections: {sections}")
     return sections
 
 def format_message(sections):
@@ -55,6 +59,7 @@ def format_message(sections):
     message = "🔔 **Daily Team Reminder**\n\n"
 
     for section, items in sections.items():
+        print(f"Processing section: {section}")
         if section.lower() == "this is the reminder":
             continue
 
@@ -65,11 +70,12 @@ def format_message(sections):
         elif "important" in section.lower():
             message += "⚠️ **Important Reminder**\n"
         elif "metrics" in section.lower():
-            message += "📊 **Metrics Goals**\n"
+            messagsage += "📊 **Metrics Goals**\n"
         else:
-            continue  # Skip adding a header for unrecognized sections
+            message += f"📌 **{section}**\n"
 
         for key, value in items:
+            print(f"Processing item: {key} - {value}")
             if key.lower() == "joke of the day":
                 message += f"• {value}\n"
             elif key.lower() == "qa tip of the day":
@@ -94,7 +100,7 @@ def format_message(sections):
 
     print(f"Formatted message:\n{message}")
     return message.strip()
-    
+
 def send_reminder():
     try:
         print(f"\n=== Starting reminder process at {datetime.now()} ===")
@@ -104,10 +110,10 @@ def send_reminder():
         print(f"QUIP_DOC_ID: {QUIP_DOC_ID}")
 
         quip_client = SimpleQuipClient(QUIP_API_TOKEN)
-        thread = quip_client.get_thread(QUIP_DOC_ID)
+        thread = qu quip_client.get_thread(QUIP_DOC_ID)
         content = thread['html']
         
-        sections = extract_content(content)  # Fixed the function name here
+        sections = extract_content(content)
         
         if not sections:
             print(f"{datetime.now()}: No content found in the document")
