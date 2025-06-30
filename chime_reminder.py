@@ -37,6 +37,7 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
+        print(f"Found main unordered list: {main_ul}")
         for li in main_ul.find_all('li', recursive=False):  # Only top-level items
             text = li.get_text(strip=True)
             print(f"Processing list item: {text}")
@@ -66,7 +67,7 @@ def extract_content(html_content):
                 nested_ul = li.find('ul')
                 if nested_ul:
                     nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['metrics'].extend(nested_items)
+                    sections['metrics'].extextend(nested_items)
                     print(f"Added to metrics section (nested): {nested_items}")
                 else:
                     sections['metrics'].append(text)
@@ -89,6 +90,8 @@ def format_message(sections):
                 _, joke = item.split(':', 1)
                 message += f"• {joke.strip()}\n"
         message += "\n"
+    else:
+        print("No joke found")
 
     # QA Tip Section
     if sections['qa_tip']:
@@ -97,6 +100,8 @@ def format_message(sections):
             if not item.lower().startswith('qa tip of the day'):
                 message += f"• {item.strip()}\n"
         message += "\n"
+    else:
+        print("No QA tips found")
 
     # Important Reminder Section
     if sections['important']:
@@ -105,6 +110,8 @@ def format_message(sections):
             if not item.lower().startswith('important reminder'):
                 message += f"• {item.strip()}\n"
         message += "\n"
+    else:
+        print("No important reminders found")
 
     # Metrics Section
     if sections['metrics']:
@@ -126,6 +133,8 @@ def format_message(sections):
         if link_text:
             message += f"\n{link_text}\n"
         message += "\n"
+    else:
+        print("No metrics found")
 
     # Add footer
     message += "-------------------\n"
