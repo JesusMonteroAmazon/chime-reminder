@@ -28,24 +28,25 @@ def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {}
-    current_section = None
+    current_section = "General"
 
     # Print the raw HTML content for debugging
     print(f"Raw HTML content: {html_content[:500]}...") # First 500 characters
 
-    elements = soup.find_all(['h1', 'h2', 'h3', 'li', 'p'])
-    for element in elements:
+    for element in soup.find_all(['p', 'li']):
         text = element.get_text(strip=True)
         if not text:
             continue
-            
-        if element.name in ['h1', 'h2', 'h3'] or (element.name == 'p' and not current_section):
+
+        if element.name == 'p':
             current_section = text
             sections[current_section] = []
-            print(f"Found section: {current_section}")
-        elif current_section:
-            sections[current_section].append(text)
-            print(f"Added item to {current_section}: {text}")
+        elif element.name == 'li':
+            if ':' in text:
+                key, value = text.split(':', 1)
+                sections[current_section].append((key.strip(), value.strip()))
+            else:
+                sections[current_section].append(("", text))
 
     return sections
 
@@ -56,8 +57,7 @@ def format_message(sections):
     for section, items in sections.items():
         if section.lower() == "this is the reminder":
             continue
-            
-        # Add appropriate icons based on section
+
         if "joke" in section.lower():
             message += "😄 **Joke of the Day**\n"
         elif "qa tip" in section.lower():
@@ -67,28 +67,25 @@ def format_message(sections):
         elif "metrics" in section.lower():
             message += "📊 **Metrics Goals**\n"
         else:
-            message += f"📌 **{section}**\n"
+            continue  # Skip adding a header for unrecognized sections
 
-        for item in items:
-            # Skip the section name if it appears in items
-            if item.lower() == section.lower():
-                continue
-                
-            if "joke of the day" in item.lower():
-                message += f"• {item.split(':', 1)[1].strip()}\n"
-            elif "qa tip" in item.lower():
-                message += f"• {item.split(':', 1)[1].strip() if ':' in item else item}\n"
-            elif "metrics goals" in item.lower():
+        for key, value in items:
+            if key.lower() == "joke of the day":
+                message += f"• {value}\n"
+            elif key.lower() == "qa tip of the day":
+                message += f"• {value}\n"
+            elif key.lower() == "important reminder":
+                message += f"• {value}\n"
+            elif key.lower() == "metrics goals":
                 continue  # Skip the header line
-            elif ": " in item:
-                key, value = item.split(":", 1)
+            elif key:
                 if "link" in key.lower():
-                    message += f"🔗 *{key.strip()}*: {value.strip()}\n"
+                    message += f"🔗 *{key}*: {value}\n"
                 else:
-                    message += f"• *{key.strip()}*: {value.strip()}\n"
+                    message += f"• *{key}*: {value}\n"
             else:
-                message += f"• {item}\n"
-        
+                message += f"• {value}\n"
+
         message += "\n"  # Add extra spacing between sections
 
     # Add a footer
@@ -97,7 +94,7 @@ def format_message(sections):
 
     print(f"Formatted message:\n{message}")
     return message.strip()
-
+    
 def send_reminder():
     try:
         print(f"\n=== Starting reminder process at {datetime.now()} ===")
