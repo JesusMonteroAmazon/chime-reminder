@@ -52,7 +52,7 @@ def extract_content(html_content):
                 else:
                     sections['qa_tip'].append(text)
                     print(f"Added to qa_tip section: {text}")
-            elif 'importartant reminder' in text.lower():
+            elif 'important reminder' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
                     nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
@@ -77,7 +77,7 @@ def extract_content(html_content):
     return sections
 
 def format_message(sections):
-    print("Formatting message...")
+    print("Formatmatting message...")
     message = "🔔 **Daily Team Reminder**\n\n"
 
     # Joke Section
@@ -93,14 +93,16 @@ def format_message(sections):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            message += f"• {item}\n"
+            if not item.lower().startswith('qa tip of the day'):
+                message += f"• {item}\n"
         message += "\n"
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            message += f"• {item}\n"
+            if not item.lower().startswith('important reminder'):
+                message += f"• {item}\n"
         message += "\n"
 
     # Metrics Section
