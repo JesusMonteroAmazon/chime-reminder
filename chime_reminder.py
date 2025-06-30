@@ -30,7 +30,7 @@ def extract_content(html_content):
     sections = {
         'joke': [],
         'qa_tip': [],
-        'important': [: [],
+        'important': [],
         'metrics': []
     }
 
