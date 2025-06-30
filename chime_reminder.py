@@ -24,13 +24,34 @@ class SimpleQuipClient:
 
 def extract_content(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    list_items = soup.find_all('li')
-    if list_items:
-        return [item.get_text(strip=True) for item in list_items]
-    paragraphs = soup.find_all('p')
-    if paragraphs:
-        return [p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True)]
-    return [soup.get_text(strip=True)]
+    sections = {}
+    current_section = None
+
+    for element in soup.find_all(['h1', 'h2', 'h3', 'li']):
+        if element.name in ['h1', 'h2', 'h3']:
+            current_section = element.text.strip()
+            sections[current_section] = []
+        elif element.name == 'li' and current_section:
+            sections[current_section].append(element.text.strip())
+
+    return sections
+
+def format_message(sections):
+    message = "🔔 **Daily Reminder**\n\n"
+
+    for section, items in sections.items():
+        if section.lower() == "this is the reminder":
+            continue
+        message += f"**{section}**\n"
+        for item in items:
+            if ":" in item:
+                key, value = item.split(":", 1)
+                message += f"• *{key.strip()}*: {value.strip()}\n"
+            else:
+                message += f"• {item}\n"
+        message += "\n"
+
+    return message.strip()
 
 def send_reminder():
     try:
@@ -38,15 +59,15 @@ def send_reminder():
         thread = quip_client.get_thread(QUIP_DOC_ID)
         content = thread['html']
         
-        reminders = extract_content(content)
+        sections = extract_content(content)
         
-        if not reminders:
+        if not sections:
             print(f"{datetime.now()}: No content found in the document")
             return
             
-        message = "🔔 Scheduled Reminder:\n" + "\n".join(f"• {reminder}" for reminder in reminders if reminder.lower() != "chime reminders")
+        message = format_message(sections)
         
-        payload = {
+        paylayload = {
             "Content": message
         }
         
@@ -54,6 +75,7 @@ def send_reminder():
         
         if response.status_code == 200:
             print(f"{datetime.now()}: Reminder sent successfully")
+            print(f"Message content:\n{message}")
         else:
             print(f"{datetime.now()}: Failed to send reminder. Status code: {response.status_code}")
             
