@@ -47,24 +47,27 @@ def extract_content(html_content):
             elif 'qa tip of the day' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
-                    sections['qa_tip'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
-                    print(f"Added to qa_tip section (nested): {sections['qa_tip']}")
+                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
+                    sections['qa_tip'].extend(nested_items)
+                    print(f"Added to qa_tip section (nested): {nested_items}")
                 else:
                     sections['qa_tip'].append(text)
                     print(f"Added to qa_tip section: {text}")
             elif 'important reminder' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
-                    sections['important'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
-                    print(f"Added to important section (nested): {sections['important']}")
+                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
+                    sections['important'].extend(nested_items)
+                    print(f"Added to important section (nested): {nested_items}")
                 else:
                     sections['important'].append(text)
                     print(f"Added to important section: {text}")
             elif 'metrics goals' in text.lower():
                 nested_ul = li.find('ul')
                 if nested_ul:
-                    sections['metrics'].extend([item.get_text(strip=True) for item in nested_ul.find_all('li')])
-                    print(f"Added to metrics section (nested): {sections['metrics']}")
+                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
+                    sections['metrics'].extend(nested_items)
+                    print(f"Added to metrics section (nested): {nested_items}")
                 else:
                     sections['metrics'].append(text)
                     print(f"Added to metrics section: {text}")
@@ -91,14 +94,16 @@ def format_message(sections):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            message += f"• {item.strip()}\n"
+            if not item.lower().startswith('qa tip of the day'):
+                message += f"• {item.strip()}\n"
         message += "\n"
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            message += f"• {item.strip()}\n"
+            if not item.lower().startswith('important reminder'):
+                message += f"• {item.strip()}\n"
         message += "\n"
 
     # Metrics Section
@@ -110,9 +115,9 @@ def format_message(sections):
             if 'remember' in item.lower():
                 # Handle the link separately
                 if ':' in item:
-                    key, value = item.split(':', 1)
+                    _, value = item.split(':', 1)
                     link_text = f"🔗 {value.strip()}"
-            elif ':' in item:
+            elif ':' in item and not item.lower().startswith('metrics goals'):
                 key, value = item.split(':', 1)
                 # Remove trailing commas and clean up the value
                 value = value.strip().rstrip(',').strip()
