@@ -95,25 +95,23 @@ def format_message(sections):
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
         metrics_text = ""
+        link_text = ""
         
-        # Process main metrics first
         for item in sections['metrics']:
-            if 'metrics goals' in item.lower():
-                if ':' in item:
-                    parts = item.split(':')
-                    if len(parts) > 2:  # Handle case where there are multiple colons
-                        key = parts[1].strip()
-                        value = parts[2].strip()
-                        if key and value:
-                            metrics_text += f"• *{key}*: {value}\n"
+            if 'remember' in item.lower():
+                # Handle the link separately
+                key, value = item.split(':', 1)
+                link_text = f"🔗 {value.strip()}"
             elif ':' in item:
                 key, value = item.split(':', 1)
-                if 'remember' in key.lower():
-                    metrics_text += f"🔗 *{key.strip()}*: {value.strip()}\n"
-                else:
-                    metrics_text += f"• *{key.strip()}*: {value.strip()}\n"
+                # Remove trailing commas from values
+                value = value.strip().rstrip(',')
+                metrics_text += f"• *{key.strip()}*: {value}\n"
         
-        message += metrics_text + "\n"
+        message += metrics_text
+        if link_text:
+            message += f"\n{link_text}\n"
+        message += "\n"
 
     # Add footer
     message += "-------------------\n"
