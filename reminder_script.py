@@ -55,7 +55,7 @@ def send_reminder():
         if response.status_code == 200:
             print(f"{datetime.now()}: Reminder sent successfully")
         else:
-            print(f"{datetime.now()}: Failed to send reminder. Status code: {response.status_code}")
+            print(f"{datetime.now()}: Failed to send reminder. S. Status code: {response.status_code}")
             
     except Exception as e:
         print(f"{datetime.now()}: Error occurred: {str(e)}")
