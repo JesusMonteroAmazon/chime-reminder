@@ -23,4 +23,4 @@ jobs:
         CHIME_WEBHOOK_URL: ${{ secrets.CHIME_WEBHOOK_URL }}
         QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
         QUIP_DOC_ID: ${{ secrets.QUIP_DOC_ID }}
-      run: python reminder_new.py
+      run: python chime_reminder.py
