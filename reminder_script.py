@@ -25,8 +25,8 @@ class SimpleQuipClient:
 def extract_content(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     list_items = soup.find_all('li')
-    if lislist_items:
-        return [item.get_text(strip=True) for it item in list_items]
+    if list_items:
+        return [item.get_text(strip=True) for item in list_items]
     paragraphs = soup.find_all('p')
     if paragraphs:
         return [p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True)]
@@ -50,7 +50,7 @@ def send_reminder():
             "Content": message
         }
         
-           response = requests.post(CHIME_WEBHOOK_URL, json=payload)
+        response = requests.post(CHIME_WEBHOOK_URL, json=payload)
         
         if response.status_code == 200:
             print(f"{datetime.now()}: Reminder sent successfully")
