@@ -86,7 +86,7 @@ def format_message(sections):
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if ':' :' in item:
+            if ':' in item:
                 _, reminder = item.split(':', 1)
                 message += f"• {reminder.strip()}\n"
         message += "\n"
@@ -94,7 +94,7 @@ def format_message(sections):
     # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
-           
+        
         # First, handle QA, ACHT, and PTL metrics
         for item in sections['metrics']:
             if any(x in item.lower() for x in ['qa:', 'acht:', 'ptl:']):
@@ -107,10 +107,9 @@ def format_message(sections):
         
         # Then, handle the link separately
         for item in sections['metrics']:
-            if 'remember' in item.lower():
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    message += f"\n🔗 {value.strip()}\n"
+            if 'remember' in item.lower() and ':' in item:
+                key, value = item.split(':', 1)
+                message += f"\n🔗 {value.strip()}\n"
         
         message += "\n"
 
