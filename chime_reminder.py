@@ -37,39 +37,23 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
-        for li in main_ul.find_all('li', recursive=False):
+        for li in main_ul.find_all('li', recursive=True):  # Changed to recursive=True
             text = li.get_text(strip=True)
             print(f"Processing list item: {text}")
+            
+            # Handle main items and their nested content
             if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
             elif 'qa tip of the day' in text.lower():
-                nested_ul = li.find('ul')
-                if nested_ul:
-                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['qa_tip'].extend(nested_items)
-                    print(f"Added to qa_tip section (nested): {nested_items}")
-                else:
-                    sections['qa_tip'].append(text)
-                    print(f"Added to qa_tip section: {text}")
+                sections['qa_tip'].append(text)
+                print(f"Added to qa_tip section: {text}")
             elif 'important reminder' in text.lower():
-                nested_ul = li.find('ul')
-                if nested_ul:
-                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['important'].extend(nested_items)
-                    print(f"Added to important section (nested): {nested_items}")
-                else:
-                    sections['important'].append(text)
-                    print(f"Added to important section: {text}")
-            elif 'metrics goals' in text.lower():
-                nested_ul = li.find('ul')
-                if nested_ul:
-                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['metrics'].extend(nested_items)
-                    print(f"Added to metrics section (nested): {nested_items}")
-                else:
-                    sections['metrics'].append(text)
-                    print(f"Added to metrics section: {text}")
+                sections['important'].append(text)
+                print(f"Added to important section: {text}")
+            elif 'metrics goals' in text.lower() or any(x in text.lower() for x in ['acht:', 'ptl:', 'qa:']):
+                sections['metrics'].append(text)
+                print(f"Added to metrics section: {text}")
     else:
         print("No main unordered list found in the HTML content")
 
@@ -77,7 +61,7 @@ def extract_content(html_content):
     return sections
 
 def format_message(sections):
-    print("Formatmatting message...")
+    print("Formatting message...")
     message = "🔔 **Daily Team Reminder**\n\n"
 
     # Joke Section
@@ -93,31 +77,43 @@ def format_message(sections):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            if not item.lower().startswith('qa tip of the day'):
-                message += f"• {item}\n"
+            if ':' in item:
+                _, tip = item.split(':', 1)
+                message += f"• {tip.strip()}\n"
         message += "\n"
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if not item.lower().startswith('important reminder'):
-                message += f"• {item}\n"
+            if ':' in item:
+                _, reminder = item.split(':', 1)
+                message += f"• {reminder.strip()p()}\n"
         message += "\n"
 
     # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
+        metrics_text = ""
+        
+        # Process main metrics first
         for item in sections['metrics']:
-            if ':' in item:
+            if 'metrics goals' in item.lower():
+                if ':' in item:
+                    parts = item.split(':')
+                    if len(parts) > 2:  # Handle case where there are multiple colons
+                        key = parts[1].strip()
+                        value = parts[2].strip()
+                        if key and value:
+                            metrics_text += f"• *{key}*: {value}\n"
+            elif ':' in item:
                 key, value = item.split(':', 1)
                 if 'remember' in key.lower():
-                    message += f"🔗 *{key.strip()}*: {value.strip()}\n"
+                    metrics_text += f"🔗 *{key.strip()}*: {value.strip()}\n"
                 else:
-                    message += f"• *{key.strip()}*: {value.strip()}\n"
-            else:
-                message += f"• {item}\n"
-        message += "\n"
+                    metrics_text += f"• *{key.strip()}*: {value.strip()}\n"
+        
+        message += metrics_text + "\n"
 
     # Add footer
     message += "-------------------\n"
