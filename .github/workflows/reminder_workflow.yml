@@ -17,7 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4
+        pip install reqrequests beautifulsoup4
     - name: Run reminder script
       env:
         CHIME_WEBHOOK_URL: ${{ secrets.CHIME_WEBHOOK_URL }}
