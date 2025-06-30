@@ -33,15 +33,19 @@ def extract_content(html_content):
     # Print the raw HTML content for debugging
     print(f"Raw HTML content: {html_content[:500]}...") # First 500 characters
 
-    for element in soup.find_all(['h1', 'h2', 'h3', 'li']):
-        if element.name in ['h1', 'h2', 'h3']:
-            current_section = element.text.strip()
+    elements = soup.find_all(['h1', 'h2', 'h3', 'li', 'p'])
+    for element in elements:
+        text = element.get_text(strip=True)
+        if not text:
+            continue
+            
+        if element.name in ['h1', 'h2', 'h3'] or (element.name == 'p' and not current_section):
+            current_section = text
             sections[current_section] = []
             print(f"Found section: {current_section}")
-        elif element.name == 'li' and current_section:
-            item_text = element.text.strip()
-            sections[current_section].append(item_text)
-            print(f"Added item to {current_section}: {item_text}")
+        elif current_section:
+            sections[current_section].append(text)
+            print(f"Added item to {current_section}: {text}")
 
     return sections
 
@@ -68,16 +72,15 @@ def send_reminder():
     try:
         print(f"\n=== Starting reminder process at {datetime.now()} ===")
         
-        # Print environment variables (masked)
-        print(f"CHIME_WEBHOOK_URL: {'*' * len(CHIME_WEBHOOK_URL)}")
-        print(f"QUIP_API_TOKEN: {'*' * len(QUIP_API_TOKEN)}")
+        print(f"CHIME_WEBHOOK_URL length: {len(CHIME_WEBHOOK_URL)}")
+        print(f"QUIP_API_TOKEN length: {len(QUIP_API_TOKEN)}")
         print(f"QUIP_DOC_ID: {QUIP_DOC_ID}")
 
         quip_client = SimpleQuipClient(QUIP_API_TOKEN)
         thread = quip_client.get_thread(QUIP_DOC_ID)
         content = thread['html']
         
-        sections = extract_contontent(content)
+        sections = extract_content(content)  # Fixed the function name here
         
         if not sections:
             print(f"{datetime.now()}: No content found in the document")
@@ -90,6 +93,7 @@ def send_reminder():
             "Content": message
         }
         
+        print(f"Sending payload: {payload}")
         response = requests.post(CHIME_WEBHOOK_URL, json=payload)
         print(f"Chime API Response Status: {response.status_code}")
         print(f"Chime API Response Content: {response.text}")
