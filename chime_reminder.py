@@ -46,12 +46,12 @@ def extract_content(html_content):
     }
 
     # Find the main unordered list
-    main_ul = soup.find('ul', re recursive=False)
+    main_ul = soup.find('ul', recursive=False)
     if main_ul:
         print(f"Found main unordered list: {main_ul}")
         
         # Process top-level list items
-        for item in main_ul.find_all('li', recursiveive=False):
+        for item in main_ul.find_all('li', recursive=False):
             text = item.get_text(strip=True)
             print(f"Processing main item: {text}")
             
