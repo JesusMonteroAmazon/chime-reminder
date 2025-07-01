@@ -34,9 +34,9 @@ class SimpleQuipClient:
             print(f"Error response content: {response.text}")
             response.raise_se_for_status()
 
-def extract_content(ht(html_content):
+def extract_content(html_content):
     print("Extracting content from HTML...")
-    print(f"HTML content: {html_content[:500]}...")  # Print first 500 charactecters of HTML
+    print(f"HTML content: {html_content[:500]}...")  # Print first 500 characters of HTML
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
@@ -46,12 +46,12 @@ def extract_content(ht(html_content):
     }
 
     # Find the main unordered list
-    main_ul = soup.find('ul', recursive=False)
+    main_ul = soup.find('ul', re recursive=False)
     if main_ul:
         print(f"Found main unordered list: {main_ul}")
         
         # Process top-level list items
-        for item in main_ul.find_all('li', recursive=False):
+        for item in main_ul.find_all('li', recursiveive=False):
             text = item.get_text(strip=True)
             print(f"Processing main item: {text}")
             
