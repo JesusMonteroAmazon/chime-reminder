@@ -24,7 +24,7 @@ def is_correct_time():
     print(f"Current Pacific time: {pacific_now.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     
     # Check if it's 7:00 AM or 2:00 PM Pacific
-    return (current_hour == 7 and current_minute == 0) or (current_hour == 14 and current_minute == 0) or FORCE_SEND
+    return (current_hour == 10 and current_minute == 0) or (current_hour == 14 and current_minute == 0) or FORCE_SEND
 
 def get_current_day():
     pacific_tz = pytz.timezone('America/Los_Angeles')
