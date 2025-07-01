@@ -3,6 +3,9 @@ import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+def get_current_day():
+    return datetime.now().strftime('%A')
+
 CHIME_WEBHOOK_URL_1 = os.environ['CHIME_WEBHOOK_URL_1']
 QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
 QUIP_DOC_ID_1 = os.environ['QUIP_DOC_ID_1']
@@ -43,7 +46,8 @@ def extract_content(html_content):
         'qa_tip': [],
         'important': [],
         'metrics': [],
-        'link': []
+        'link': [],
+        'day': []  # New section for day-specific content
     }
 
     try:
@@ -53,6 +57,14 @@ def extract_content(html_content):
             main_ul = div.find('ul')
             if main_ul:
                 print(f"Found main unordered list: {main_ul}")
+
+                for item in main_ul.find_all('li'):
+            text = item.get_text(strip=True)
+            day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
+            if day_match:
+                day = day_match.group(1)
+                sections['day'].append((day, text))
+                print(f"Added to day section: {day}: {text}")
                 
                 # Process list items
                 for item in main_ul.find_all('li'):
@@ -106,10 +118,15 @@ def extract_content(html_content):
         print(f"{section}: {items}")
     return sections
 
-def format_message(sections):
+def format_message(sections, current_day):
     print("Formatting message...")
     message = "🔔 **Daily Team Reminder**\n\n"
 
+    for day, content in sections['day']:
+        if day == current_day:
+            message += f"📅 **{day}'s Reminder**\n"
+            message += f"• {content.strip()}\n\n"
+            
     # Joke Section
     if sections['joke']:
         message += "😄 **Joke of the Day**\n"
@@ -162,6 +179,9 @@ def send_reminder():
     try:
         print(f"\n=== Starting reminder process at {datetime.now()} ===")
         
+        current_day = get_current_day()
+        print(f"Current day: {current_day}")
+        
         print(f"CHIME_WEBHOOK_URL_1 length: {len(CHIME_WEBHOOK_URL_1)}")
         print(f"QUIP_API_TOKEN length: {len(QUIP_API_TOKEN)}")
         print(f"QUIP_DOC_ID_1: {QUIP_DOC_ID_1}")
@@ -176,7 +196,7 @@ def send_reminder():
             print(f"{datetime.now()}: No content found in the document")
             return
             
-        message = format_message(sections)
+        message = format_message(sections, current_day)
         
         print("Sending message to Chime...")
         payload = {
