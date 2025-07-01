@@ -9,28 +9,28 @@ QUIP_DOC_ID = os.environ['QUIP_DOC_ID']
 
 class SimpleQuipClient:
     def __init__(self, access_token):
-        self.access_token = access_token
+        self.access_token = accescess_token
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
-    url = f"{self.base_url}/threads/{thread_id}"
-    headers = {
-        "Authorization": f"Bearer {self.access_token}",
-        "Accept": "application/json"
-    }
-    print(f"Fetching Quip document with URL: {url}")
-    response = requests.get(url, headers=headers)
-    print(f"Quip API Response Status: {response.status_code}")
-    
-    if response.status_code == 200:
-        json_response = response.json()
-        if 'html' not in json_response:
-            json_response['html'] = json_response['thread'].get('html', '')
-        return json_response
-    else:
-        response.raise_for_status()
+        url = f"{self.base_url}/threads/{thread_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json"
+        }
+        print(f"Fetching Quip document with URL: {url}")
+        response = requests.get(url, headers=headers)
+        print(f"Quip API Response Status: {response.status_code}")
         
-def extract_content(htmltml_content):
+        if response.status_code == 200:
+            json_response = response.json()
+            if 'html' not in json_response:
+                json_response['html'] = json_response['thread'].get('html', '')
+            return json_response
+        else:
+            response.raise_for_status()
+
+def extract_ct_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
@@ -68,11 +68,11 @@ def extract_content(htmltml_content):
                 nested_ul = item.find('ul')
                 if nested_ul:
                     for nested_item in nested_ul.find_all('li', recursive=False):
-                        nested_text = nested_item.get_text(strip=True)
+                           nested_text = nested_item.get_text(strip=True)
                         sections['important'].append(nested_text)
                         print(f"Added to important section: {nested_text}")
                         
-            elif 'metrics goals' in text.lower():
+            elif 'm 'metrics goals' in text.lower():
                 # Find nested items
                 nested_ul = item.find('ul')
                 if nested_ul:
