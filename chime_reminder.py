@@ -11,28 +11,27 @@ class SimpleQuipClient:
     def __init__(self, access_token):
         self.access_token = access_token
         self.base_url = "https://platform.quip-amazon.com/1"
-        
-def get_thread(self, thread_id):
-    url = f"{self.base_url}/threads/{thread_id}"
-    headers = {
-        "Authorization": f"Bearer {self.access_token}",
-        "Accept": "application/json"
-    }
-    print(f"Fetching Quip document with URL: {url}")
-    response = requests.get(url, headers=headers)
-    print(f"Quip API Response Status: {response.status_code}")
-    response.raise_for_status()
-    json_response = response.json()
-    print(f"Quip API Response Content: {json_response}")
-    return json_response
 
+    def get_thread(self, thread_id):
+        url = f"{self.base_url}/threads/{thread_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json"
+        }
+        print(f"Fetching Quip document with URL: {url}")
+        response = requests.get(url, headers=headers)
+        print(f"Quip API Response Status: {response.status_code}")
+        print(f"Response content: {response.text[:500]}...")
+        response.raise_for_status()
+        json_response = response.json()
+        return json_response
 
 def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
-        'qa_tiptip': [],
+        'qa_tip': [],
         'important': [],
         'metrics': []
     }
@@ -56,9 +55,6 @@ def extract_content(html_content):
                         sub_text = sub_li.get_text(strip=True)
                         sections['qa_tip'].append(sub_text)
                         print(f"Added to qa_tip section: {sub_text}")
-                else:
-                    sections['qa_tip'].append(text)
-                    print(f"Added to qa_tip section: {text}")
             elif 'important reminder' in text.lower():
                 print("Found Important Reminder section")
                 sub_ul = li.find('ul')
@@ -67,9 +63,6 @@ def extract_content(html_content):
                         sub_text = sub_li.get_text(strip=True)
                         sections['important'].append(sub_text)
                         print(f"Added to important section: {sub_text}")
-                else:
-                    sections['important'].append(text)
-                    print(f"Added to important section: {text}")
             elif 'metrics goals' in text.lower():
                 print("Found Metrics Goals section")
                 sub_ul = li.find('ul')
@@ -78,9 +71,6 @@ def extract_content(html_content):
                         sub_text = sub_li.get_text(strip=True)
                         sections['metrics'].append(sub_text)
                         print(f"Added to metrics section: {sub_text}")
-                else:
-                    sections['metrics'].append(text)
-                    print(f"Added to metrics section: {text}")
     else:
         print("No main unordered list found in the HTML content")
 
