@@ -23,6 +23,7 @@ class SimpleQuipClient:
         print(f"Quip API Response Status: {response.status_code}")
         response.raise_for_status()
         return response.json()
+
 def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -36,6 +37,7 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
+        print(f"Found main unordered list: {main_ul}")
         for li in main_ul.find_all('li', recursive=False):  # Only top-level items
             text = li.get_text(strip=True)
             print(f"Processing main list item: {text}")
@@ -44,29 +46,49 @@ def extract_content(html_content):
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
             elif 'qa tip of the day' in text.lower():
+                print("Found QA Tip section")
                 # Find sub-bullets
                 sub_items = li.find_all('li', recursive=True)
+                print(f"Found {len(sub_items)} sub-items in QA Tip section")
                 if sub_items:
                     for sub_item in sub_items:
-                        if not 'qa tip of the day' in sub_item.get_text(strip=True).lower():
-                            sections['qa_tip'].append(sub_item.get_text(strip=True))
-                            print(f"Added to qa_tip section: {sub_item.get_text(strip=True)}")
+                        sub_text = sub_item.get_text(strip=True)
+                        print(f"Processing QA Tip sub-item: {sub_text}")
+                        if not 'qa tip of the day' in sub_text.lower():
+                            sections['qa_tip'].append(sub_text)
+                            print(f"Added to qa_tip section: {sub_text}")
+                else:
+                    print("No sub-items found in QA Tip section")
             elif 'important reminder' in text.lower():
+                print("Found Important Reminder section")
                 # Find sub-bullets
                 sub_items = li.find_all('li', recursive=True)
+                print(f"Found {len(sub_items)} sub-items in Important Reminder section")
                 if sub_items:
                     for sub_item in sub_items:
-                        if not 'important reminder' in sub_item.get_text(strip=True).lower():
-                            sections['important'].append(sub_item.get_text(strip=True))
-                            print(f"Added to important section: {sub_item.get_text(strip=True)}")
+                        sub_text = sub_item.get_text(strip=True)
+                        print(f"Processing Important Reminder sub-item: {sub_text}")
+                        if not 'important reminder' in sub_text.lower():
+                            sections['important'].append(sub_text)
+                            print(f"Added to important section: {sub_text}")
+                else:
+                    print("No sub-items found in Important Reminder section")
             elif 'metrics goals' in text.lower():
+                print("Found Metrics Goals section")
                 # Find sub-bullets
                 sub_items = li.find_all('li', recursive=True)
+                print(f"Found {len(sub_items)} sub-items in Metrics Goals section")
                 if sub_items:
                     for sub_item in sub_items:
-                        if not 'metrics goals' in sub_item.get_text(strip=True).lower():
-                            sections['metrics'].append(sub_item.get_text(strip=True))
-                            print(f"Added to metrics section: {sub_item.get_text(strip=True)}")
+                        sub_text = sub_item.get_text(strip=True)
+                        print(f"Processing Metrics Goals sub-item: {sub_text}")
+                        if not 'metrics goals' in sub_text.lower():
+                            sections['metrics'].append(sub_text)
+                            print(f"Added to metrics section: {sub_text}")
+                else:
+                    print("No sub-items found in Metrics Goals section")
+    else:
+        print("No main unordered list found in the HTML content")
 
     print(f"Extracted sections: {sections}")
     return sections
