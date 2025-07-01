@@ -28,12 +28,12 @@ class SimpleQuipClient:
             if 'html' not in json_response:
                 print("HTML not in JSON response, trying to get it from 'thread'")
                 json_response['html'] = json_response['thread'].get('html', '')
-            print(f"HTML content length: {l {len(json_response['html'])}")
+            print(f"HTML content length: {len(json_response['html'])}")
             return json_response
         else:
             print(f"Error response content: {response.text}")
-            response.raise_se_for_status()
-
+            response.raise_for_status()
+            
 def extract_content(html_content):
     print("Extracting content from HTML...")
     print(f"HTML content: {html_content[:500]}...")  # Print first 500 characters of HTML
