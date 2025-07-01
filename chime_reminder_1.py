@@ -1,5 +1,6 @@
 import requests
 import os
+import re
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -57,14 +58,6 @@ def extract_content(html_content):
             main_ul = div.find('ul')
             if main_ul:
                 print(f"Found main unordered list: {main_ul}")
-
-                for item in main_ul.find_all('li'):
-            text = item.get_text(strip=True)
-            day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
-            if day_match:
-                day = day_match.group(1)
-                sections['day'].append((day, text))
-                print(f"Added to day section: {day}: {text}")
                 
                 # Process list items
                 for item in main_ul.find_all('li'):
@@ -91,7 +84,7 @@ def extract_content(html_content):
                             if nested_ul:
                                 for nested_item in nested_ul.find_all('li'):
                                     nested_text = nested_item.get_text(strip=True)
-                                    sections['important'].append(nested_text)
+                                    sections['important'].appappend(nested_text)
                                     print(f"Added to important section: {nested_text}")
                     elif 'metrics goals' in text.lower():
                         if ':' in text:
@@ -106,6 +99,13 @@ def extract_content(html_content):
                                     else:
                                         sections['metrics'].append(nested_text)
                                         print(f"Added to metrics section: {nested_text}")
+                    
+                    # New condition to check for day-specific content
+                    day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
+                    if day_match:
+                        day = day_match.group(1)
+                        sections['day'].append((day, text))
+                        print(f"Added to day section: {day}: {text}")
             else:
                 print("No unordered list found in the div")
         else:
