@@ -30,7 +30,7 @@ class SimpleQuipClient:
         else:
             response.raise_for_status()
 
-def extract_ct_content(html_content):
+def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
@@ -50,7 +50,7 @@ def extract_ct_content(html_content):
             text = item.get_text(strip=True)
             print(f"Processing main item: {text}")
             
-            if 'joke of the day' in text.lower():
+            if 'joke of tf the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
                 
@@ -68,11 +68,11 @@ def extract_ct_content(html_content):
                 nested_ul = item.find('ul')
                 if nested_ul:
                     for nested_item in nested_ul.find_all('li', recursive=False):
-                           nested_text = nested_item.get_text(strip=True)
+                        nested_text = nested_item.get_text(strip=True)
                         sections['important'].append(nested_text)
                         print(f"Added to important section: {nested_text}")
                         
-            elif 'm 'metrics goals' in text.lower():
+            elif 'metrics goals' in text.lower():
                 # Find nested items
                 nested_ul = item.find('ul')
                 if nested_ul:
