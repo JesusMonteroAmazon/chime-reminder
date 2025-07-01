@@ -48,7 +48,7 @@ def extract_content(html_content):
                 sub_items = li.find_all('li', recursive=True)
                 if sub_items:
                     for sub_item in sub_items:
-                        if nf not 'qa tip of the day' in sub_item.get_text(strip=True).lower():
+                        if not 'qa tip of the day' in sub_item.get_text(strip=True).lower():
                             sections['qa_tip'].append(sub_item.get_text(strip=True))
                             print(f"Added to qa_tip section: {sub_item.get_text(strip=True)}")
             elif 'important reminder' in text.lower():
@@ -88,7 +88,7 @@ def format_message(sections):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            message += f"• {item.strip()}\n"\n"
+            message += f"• {item.strip()}\n"
         message += "\n"
 
     # Important Reminder Section
