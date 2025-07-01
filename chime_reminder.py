@@ -34,12 +34,12 @@ class SimpleQuipClient:
             print(f"Error response content: {response.text}")
             response.raise_se_for_status()
 
-def extract_content(html_content):
+def extract_content(ht(html_content):
     print("Extracting content from HTML...")
-    print(f"HTML content: {html_content[:500]}...")  # Print first 500 characters of HTML
+    print(f"HTML content: {html_content[:500]}...")  # Print first 500 charactecters of HTML
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
-        'joke': [] [],
+        'joke': [],
         'qa_tip': [],
         'important': [],
         'metrics': []
