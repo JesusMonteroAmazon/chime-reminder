@@ -7,32 +7,32 @@ CHIME_WEBHOOK_URL = os.environ['CHIME_WEBHOOK_URL']
 QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
 QUIP_DOC_ID = os.environ['QUIP_DOC_ID']
 
-class SimpleQuipClient:
+class SimpleQleQuipClient:
     def __init__(self, access_token):
-        self.access_token = access_token  # Fixed parameter name
+        self.access_token = access_token
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
-    url = f"{self.base_url}/threads/{thread_id}"
-    headers = {
-        "Authorization": f"Bearer {self.access_token}",
-        "Accept": "application/json"
-    }
-    print(f"Fetching Quip document with URL: {url}")
-    response = requests.get(url, headers=headers)
-    print(f"Quip API Response Status: {response.status_code}")
-    
-    if response.status_code == 200:
-        json_response = response.json()
-        print(f"JSON response keys: {json_response.keys()}")
-        if 'html' not in json_response:
-            print("HTML not in JSON response, trying to get it from 'thread'")
-            json_response['html'] = json_response['thread'].get('html', '')
-        print(f"HTML content length: {len(json_response['html'])}")
-        return json_response
-    else:
-        print(f"Error response content: {response.text}")
-        response.raise_for_status()
+        url = f"{self.base_url}/threads/{thread_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json"
+        }
+        print(f"Fetching Quip document with URL: {url}")
+        response = requests.get(url, headers=headers)
+        print(f"Quip API Response Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            json_response = response.json()
+            print(f"JSON response keys: {json_response.keys()}")
+            if 'html' not in json_response:
+                print("HTML not in JSON response, trying to get it from 'thread'")
+                json_response['html'] = json_response['thread'].get('html', '')
+            print(f"HTML content length: {len(json_response['html'])}")
+            return json_response
+        else:
+            print(f"Error response content: {response.text}")
+            response.raise_for_status()
 
 def extract_content(html_content):
     print("Extracting content from HTML...")
