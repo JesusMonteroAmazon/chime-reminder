@@ -11,25 +11,28 @@ class SimpleQuipClient:
     def __init__(self, access_token):
         self.access_token = access_token
         self.base_url = "https://platform.quip-amazon.com/1"
+        
+def get_thread(self, thread_id):
+    url = f"{self.base_url}/threads/{thread_id}"
+    headers = {
+        "Authorization": f"Bearer {self.access_token}",
+        "Accept": "application/json"
+    }
+    print(f"Fetching Quip document with URL: {url}")
+    response = requests.get(url, headers=headers)
+    print(f"Quip API Response Status: {response.status_code}")
+    response.raise_for_status()
+    json_response = response.json()
+    print(f"Quip API Response Content: {json_response}")
+    return json_response
 
-    def get_thread(self, thread_id):
-        url = f"{self.base_url}/threads/{thread_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Accept": "application/json"
-        }
-        print(f"Fetching Quip document with URL: {url}")
-        response = requests.get(url, headers=headers)
-        print(f"Quip API Response Status: {response.status_code}")
-        response.raise_for_status()
-        return response.json()
 
 def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
-        'qa_tip': [],
+        'qa_tiptip': [],
         'important': [],
         'metrics': []
     }
@@ -49,26 +52,35 @@ def extract_content(html_content):
                 print("Found QA Tip section")
                 sub_ul = li.find('ul')
                 if sub_ul:
-                    for sub_li in sub_ul.find_all('li', recursive=False):
+                    for sub_li in sub_ul.find_all('li'):
                         sub_text = sub_li.get_text(strip=True)
                         sections['qa_tip'].append(sub_text)
                         print(f"Added to qa_tip section: {sub_text}")
+                else:
+                    sections['qa_tip'].append(text)
+                    print(f"Added to qa_tip section: {text}")
             elif 'important reminder' in text.lower():
                 print("Found Important Reminder section")
                 sub_ul = li.find('ul')
                 if sub_ul:
-                    for sub_li in sub_ul.find_all('li', recursive=False):
+                    for sub_li in sub_ul.find_all('li'):
                         sub_text = sub_li.get_text(strip=True)
                         sections['important'].append(sub_text)
                         print(f"Added to important section: {sub_text}")
+                else:
+                    sections['important'].append(text)
+                    print(f"Added to important section: {text}")
             elif 'metrics goals' in text.lower():
                 print("Found Metrics Goals section")
                 sub_ul = li.find('ul')
                 if sub_ul:
-                    for sub_li in sub_ul.find_all('li', recursive=False):
+                    for sub_li in sub_ul.find_all('li'):
                         sub_text = sub_li.get_text(strip=True)
                         sections['metrics'].append(sub_text)
                         print(f"Added to metrics section: {sub_text}")
+                else:
+                    sections['metrics'].append(text)
+                    print(f"Added to metrics section: {text}")
     else:
         print("No main unordered list found in the HTML content")
 
