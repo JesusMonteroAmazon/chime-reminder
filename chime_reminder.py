@@ -37,7 +37,7 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
-        print(f"Found main unordered list: {main_ul}")
+        print(f"Found main unordered list")
         for li in main_ul.find_all('li', recursive=False):  # Only top-level items
             text = li.get_text(strip=True)
             print(f"Processing main list item: {text}")
@@ -47,46 +47,28 @@ def extract_content(html_content):
                 print(f"Added to joke section: {text}")
             elif 'qa tip of the day' in text.lower():
                 print("Found QA Tip section")
-                # Find sub-bullets
-                sub_items = li.find_all('li', recursive=True)
-                print(f"Found {len(sub_items)} sub-items in QA Tip section")
-                if sub_items:
-                    for sub_item in sub_items:
-                        sub_text = sub_item.get_text(strip=True)
-                        print(f"Processing QA Tip sub-item: {sub_text}")
-                        if not 'qa tip of the day' in sub_text.lower():
-                            sections['qa_tip'].append(sub_text)
-                            print(f"Added to qa_tip section: {sub_text}")
-                else:
-                    print("No sub-items found in QA Tip section")
+                sub_ul = li.find('ul')
+                if sub_ul:
+                    for sub_li in sub_ul.find_all('li', recursive=False):
+                        sub_text = sub_li.get_text(strip=True)
+                        sections['qa_tip'].append(sub_text)
+                        print(f"Added to qa_tip section: {sub_text}")
             elif 'important reminder' in text.lower():
                 print("Found Important Reminder section")
-                # Find sub-bullets
-                sub_items = li.find_all('li', recursive=True)
-                print(f"Found {len(sub_items)} sub-items in Important Reminder section")
-                if sub_items:
-                    for sub_item in sub_items:
-                        sub_text = sub_item.get_text(strip=True)
-                        print(f"Processing Important Reminder sub-item: {sub_text}")
-                        if not 'important reminder' in sub_text.lower():
-                            sections['important'].append(sub_text)
-                            print(f"Added to important section: {sub_text}")
-                else:
-                    print("No sub-items found in Important Reminder section")
+                sub_ul = li.find('ul')
+                if sub_ul:
+                    for sub_li in sub_ul.find_all('li', recursive=False):
+                        sub_text = sub_li.get_text(strip=True)
+                        sections['important'].append(sub_text)
+                        print(f"Added to important section: {sub_text}")
             elif 'metrics goals' in text.lower():
                 print("Found Metrics Goals section")
-                # Find sub-bullets
-                sub_items = li.find_all('li', recursive=True)
-                print(f"Found {len(sub_items)} sub-items in Metrics Goals section")
-                if sub_items:
-                    for sub_item in sub_items:
-                        sub_text = sub_item.get_text(strip=True)
-                        print(f"Processing Metrics Goals sub-item: {sub_text}")
-                        if not 'metrics goals' in sub_text.lower():
-                            sections['metrics'].append(sub_text)
-                            print(f"Added to metrics section: {sub_text}")
-                else:
-                    print("No sub-items found in Metrics Goals section")
+                sub_ul = li.find('ul')
+                if sub_ul:
+                    for sub_li in sub_ul.find_all('li', recursive=False):
+                        sub_text = sub_li.get_text(strip=True)
+                        sections['metrics'].append(sub_text)
+                        print(f"Added to metrics section: {sub_text}")
     else:
         print("No main unordered list found in the HTML content")
 
