@@ -1,8 +1,43 @@
 import requests
 import os
 import re
+import schedule
+import time
+import pytz
 from bs4 import BeautifulSoup
 from datetime import datetime
+
+def is_correct_time():
+    # Get current time in Pacific timezone
+    pacific_tz = pytz.timezone('America/Los_Angeles')
+    current_time = datetime.now(pacific_tz)
+    current_hour = current_time.hour
+    current_minute = current_time.minute
+    
+    # Check if it's 7:00 AM or 2:00 PM Pacific
+    return (current_hour == 7 and current_minute == 0) or (current_hour == 14 and current_minute == 0)
+
+def run_scheduler():
+    # Schedule jobs
+    schedule.every().day.at("07:00").timezone('America/Los_Angeles').do(send_reminder)
+    schedule.every().day.at("14:00").timezone('America/Los_Angeles').do(send_reminder)
+    
+    print(f"Scheduler started. Waiting for next run time...")
+    print(f"Next run times:")
+    print(f"- 07:00 AM Pacific time")
+    print(f"- 02:00 PM Pacific time")
+
+    while True:
+        schedule.run_pending()
+        time.sleep(30)  # Sleep for 30 seconds between checks
+
+if __name__ == "__main__":
+    try:
+        run_scheduler()
+    except KeyboardInterrupt:
+        print("\nScheduler stopped by user")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
 
 def get_current_day():
     return datetime.now().strftime('%A')
