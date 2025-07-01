@@ -13,25 +13,30 @@ class SimpleQuipClient:
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
-        url = f"{self.base_url}/threads/{thread_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Accept": "application/json"
-        }
-        print(f"Fetching Quip document with URL: {url}")
-        response = requests.get(url, headers=headers)
-        print(f"Quip API Response Status: {response.status_code}")
-        
-        if response.status_code == 200:
-            json_response = response.json()
-            if 'html' not in json_response:
-                json_response['html'] = json_response['thread'].get('html', '')
-            return json_response
-        else:
-            response.raise_for_status()
+    url = f"{self.base_url}/threads/{thread_id}"
+    headers = {
+        "Authorization": f"Bearer {self.access_token}",
+        "Accept": "application/json"
+    }
+    print(f"Fetching Quip document with URL: {url}")
+    response = requests.get(url, headers=headers)
+    print(f"Quip API Response Status: {response.status_code}")
+    
+    if response.status_code == 200:
+        json_response = response.json()
+        print(f"JSON response keys: {json_response.keys()}")
+        if 'html' not in json_response:
+            print("HTML not in JSON response, trying to get it from 'thread'")
+            json_response['html'] = json_response['thread'].get('html', '')
+        print(f"HTML content length: {len(json_response['html'])}")
+        return json_response
+    else:
+        print(f"Error response content: {response.text}")
+        response.raise_for_status()
 
 def extract_content(html_content):
     print("Extracting content from HTML...")
+    print(f"HTML content: {html_content[:500]}...")  # Print first 500 characters of HTML
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
@@ -43,14 +48,14 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul', recursive=False)
     if main_ul:
-        print(f"Found main unordered list")
+        print(f"Found main unordered list: {main_ul}")
         
         # Process top-level list items
-        for item in main_ul.find_all('li', recursive=False):
+        for item in ma main_ul.find_all('li', recursive=False):
             text = item.get_text(strip=True)
             print(f"Processing main item: {text}")
             
-            if 'joke of tf the day' in text.lower():
+            if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
                 
@@ -62,6 +67,9 @@ def extract_content(html_content):
                         nested_text = nested_item.get_text(strip=True)
                         sections['qa_tip'].append(nested_text)
                         print(f"Added to qa_tip section: {nested_text}")
+                else:
+                    sections['qa_tip'].append(text)
+                    print(f"Added to qa_tip section: {text}")
                         
             elif 'important reminder' in text.lower():
                 # Find nested items
@@ -71,6 +79,9 @@ def extract_content(html_content):
                         nested_text = nested_item.get_text(strip=True)
                         sections['important'].append(nested_text)
                         print(f"Added to important section: {nested_text}")
+                else:
+                    sections['important'].append(text)
+                    print(f"Added to important section: {text}")
                         
             elif 'metrics goals' in text.lower():
                 # Find nested items
@@ -80,6 +91,11 @@ def extract_content(html_content):
                         nested_text = nested_item.get_text(strip=True)
                         sections['metrics'].append(nested_text)
                         print(f"Added to metrics section: {nested_text}")
+                else:
+                    sections['metrics'].append(text)
+                    print(f"Added to metrics section: {text}")
+    else:
+        print("No main unordered list found")
 
     print("Final sections content:")
     for section, items in sections.items():
