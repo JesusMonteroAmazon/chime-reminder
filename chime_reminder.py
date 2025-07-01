@@ -23,7 +23,6 @@ class SimpleQuipClient:
         print(f"Quip API Response Status: {response.status_code}")
         response.raise_for_status()
         return response.json()
-
 def extract_content(html_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -37,43 +36,37 @@ def extract_content(html_content):
     # Find the main unordered list
     main_ul = soup.find('ul')
     if main_ul:
-        print(f"Found main unordered list: {main_ul}")
         for li in main_ul.find_all('li', recursive=False):  # Only top-level items
             text = li.get_text(strip=True)
-            print(f"Processing list item: {text}")
+            print(f"Processing main list item: {text}")
             
             if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
             elif 'qa tip of the day' in text.lower():
-                nested_ul = li.find('ul')
-                if nested_ul:
-                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['qa_tip'].extend(nested_items)
-                    print(f"Added to qa_tip section (nested): {nested_items}")
-                else:
-                    sections['qa_tip'].append(text)
-                    print(f"Added to qa_tip section: {text}")
+                # Find sub-bullets
+                sub_items = li.find_all('li', recursive=True)
+                if sub_items:
+                    for sub_item in sub_items:
+                        if nf not 'qa tip of the day' in sub_item.get_text(strip=True).lower():
+                            sections['qa_tip'].append(sub_item.get_text(strip=True))
+                            print(f"Added to qa_tip section: {sub_item.get_text(strip=True)}")
             elif 'important reminder' in text.lower():
-                nested_ul = li.find('ul')
-                if nested_ul:
-                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['important'].extend(nested_items)
-                    print(f"Added to important section (nested): {nested_items}")
-                else:
-                    sections['important'].append(text)
-                    print(f"Added to important section: {text}")
+                # Find sub-bullets
+                sub_items = li.find_all('li', recursive=True)
+                if sub_items:
+                    for sub_item in sub_items:
+                        if not 'important reminder' in sub_item.get_text(strip=True).lower():
+                            sections['important'].append(sub_item.get_text(strip=True))
+                            print(f"Added to important section: {sub_item.get_text(strip=True)}")
             elif 'metrics goals' in text.lower():
-                nested_ul = li.find('ul')
-                if nested_ul:
-                    nested_items = [item.get_text(strip=True) for item in nested_ul.find_all('li')]
-                    sections['metrics'].extextend(nested_items)
-                    print(f"Added to metrics section (nested): {nested_items}")
-                else:
-                    sections['metrics'].append(text)
-                    print(f"Added to metrics section: {text}")
-    else:
-        print("No main unordered list found in the HTML content")
+                # Find sub-bullets
+                sub_items = li.find_all('li', recursive=True)
+                if sub_items:
+                    for sub_item in sub_items:
+                        if not 'metrics goals' in sub_item.get_text(strip=True).lower():
+                            sections['metrics'].append(sub_item.get_text(strip=True))
+                            print(f"Added to metrics section: {sub_item.get_text(strip=True)}")
 
     print(f"Extracted sections: {sections}")
     return sections
@@ -90,28 +83,20 @@ def format_message(sections):
                 _, joke = item.split(':', 1)
                 message += f"• {joke.strip()}\n"
         message += "\n"
-    else:
-        print("No joke found")
 
     # QA Tip Section
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            if not item.lower().startswith('qa tip of the day'):
-                message += f"• {item.strip()}\n"
+            message += f"• {item.strip()}\n"\n"
         message += "\n"
-    else:
-        print("No QA tips found")
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if not item.lower().startswith('important reminder'):
-                message += f"• {item.strip()}\n"
+            message += f"• {item.strip()}\n"
         message += "\n"
-    else:
-        print("No important reminders found")
 
     # Metrics Section
     if sections['metrics']:
@@ -124,7 +109,7 @@ def format_message(sections):
                 if ':' in item:
                     _, value = item.split(':', 1)
                     link_text = f"🔗 {value.strip()}"
-            elif ':' in item and not item.lower().startswith('metrics goals'):
+            elif ':' in item:
                 key, value = item.split(':', 1)
                 # Remove trailing commas and clean up the value
                 value = value.strip().rstrip(',').strip()
@@ -133,8 +118,6 @@ def format_message(sections):
         if link_text:
             message += f"\n{link_text}\n"
         message += "\n"
-    else:
-        print("No metrics found")
 
     # Add footer
     message += "-------------------\n"
