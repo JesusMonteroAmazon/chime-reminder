@@ -1,11 +1,14 @@
 import requests
 import os
-import re
+from bs4 import BeautifulSoup
+from datetime import datetime
 import schedule
 import time
 import pytz
-from bs4 import BeautifulSoup
-from datetime import datetime
+
+CHIME_WEBHOOK_URL_1 = os.environ['CHIME_WEBHOOK_URL_1']
+QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
+QUIP_DOC_ID_1 = os.environ['QUIP_DOC_ID_1']
 
 def is_correct_time():
     # Get current time in Pacific timezone
@@ -17,34 +20,51 @@ def is_correct_time():
     # Check if it's 7:00 AM or 2:00 PM Pacific
     return (current_hour == 7 and current_minute == 0) or (current_hour == 14 and current_minute == 0)
 
+def send_reminder():
+    try:
+        # Only proceed if it's the correct time
+        if not is_correct_time():
+            print(f"Current time is not a scheduled reminder time. Skipping.")
+            return
+        
+        print(f"\n=== Starting reminder process at {datetime.now()} ===")
+        
+        # ... (keep your existing send_reminder logic here)
+        
+    except Exception as e:
+        print(f"{datetime.now()}: Error occurred: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+
 def run_scheduler():
     # Schedule jobs
-    schedule.every().day.at("07:00").timezone('America/Los_Angeles').do(send_reminder)
-    schedule.every().day.at("14:00").timezone('America/Los_Angeles').do(send_reminder)
+    schedule.every().day.at("14:00").do(send_reminder)  # 7:00 AM Pacific = 14:00 UTC
+    schedule.every().day.at("21:00").do(send_reminder)  # 2:00 PM Pacific = 21:00 UTC
     
     print(f"Scheduler started. Waiting for next run time...")
-    print(f"Next run times:")
-    print(f"- 07:00 AM Pacific time")
-    print(f"- 02:00 PM Pacific time")
+    print(f"Next run times (in UTC):")
+    print(f"- 14:00 UTC (07:00 AM Pacific time)")
+    print(f"- 21:00 UTC (02:00 PM Pacific time)")
 
     while True:
         schedule.run_pending()
-        time.sleep(30)  # Sleep for 30 seconds between checks
+        time.sleep(60)  # Sleep for 60 seconds between checks
 
 if __name__ == "__main__":
-    try:
-        run_scheduler()
-    except KeyboardInterrupt:
-        print("\nScheduler stopped by user")
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
+    if 'GITHUB_ACTIONS' in os.environ:
+        # If running in GitHub Actions
+        send_reminder()
+    else:
+        # If running locally
+        try:
+            run_scheduler()
+        except KeyboardInterrupt:
+            print("\nScheduler stopped by user")
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
 
 def get_current_day():
     return datetime.now().strftime('%A')
-
-CHIME_WEBHOOK_URL_1 = os.environ['CHIME_WEBHOOK_URL_1']
-QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
-QUIP_DOC_ID_1 = os.environ['QUIP_DOC_ID_1']
 
 class SimpleQuipClient:
     def __init__(self, access_token):
