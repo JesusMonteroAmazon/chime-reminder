@@ -13,20 +13,24 @@ class SimpleQuipClient:
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
-        url = f"{self.base_url}/threads/{thread_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Accept": "application/json"
-        }
-        print(f"Fetching Quip document with URL: {url}")
-        response = requests.get(url, headers=headers)
-        print(f"Quip API Response Status: {response.status_code}")
-        print(f"Response content: {response.text[:500]}...")
-        response.raise_for_status()
+    url = f"{self.base_url}/threads/{thread_id}"
+    headers = {
+        "Authorization": f"Bearer {self.access_token}",
+        "Accept": "application/json"
+    }
+    print(f"Fetching Quip document with URL: {url}")
+    response = requests.get(url, headers=headers)
+    print(f"Quip API Response Status: {response.status_code}")
+    
+    if response.status_code == 200:
         json_response = response.json()
+        if 'html' not in json_response:
+            json_response['html'] = json_response['thread'].get('html', '')
         return json_response
-
-def extract_content(html_content):
+    else:
+        response.raise_for_status()
+        
+def extract_content(htmltml_content):
     print("Extracting content from HTML...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
@@ -37,44 +41,45 @@ def extract_content(html_content):
     }
 
     # Find the main unordered list
-    main_ul = soup.find('ul')
+    main_ul = soup.find('ul', recursive=False)
     if main_ul:
         print(f"Found main unordered list")
         
-        # Process all list items
-        list_items = main_ul.find_all('li')
-        print(f"Found {len(list_items)} total list items")
-        
-        for item in list_items:
+        # Process top-level list items
+        for item in main_ul.find_all('li', recursive=False):
             text = item.get_text(strip=True)
-            print(f"Processing item: {text}")
+            print(f"Processing main item: {text}")
             
-            # Check if this is a nested item
-            parent = item.find_parent('ul')
-            is_nested = parent and parent.find_parent('ul')
-            
-            if is_nested:
-                print(f"This is a nested item")
-                # Find which section this belongs to
-                parent_li = parent.find_parent('li')
-                if parent_li:
-                    parent_text = parent_li.find('span').get_text(strip=True).lower()
-                    print(f"Parent section: {parent_text}")
-                    
-                    if 'qa tip of the day' in parent_text:
-                        sections['qa_tip'].append(text)
-                        print(f"Added to qa_tip section: {text}")
-                    elif 'important reminder' in parent_text:
-                        sections['important'].append(text)
-                        print(f"Added to important section: {text}")
-                    elif 'metrics goals' in parent_text:
-                        sections['metrics'].append(text)
-                        print(f"Added to metrics section: {text}")
-            else:
-                # This is a top-level item
-                if 'joke of the day' in text.lower():
-                    sections['joke'].append(text)
-                    print(f"Added to joke section: {text}")
+            if 'joke of the day' in text.lower():
+                sections['joke'].append(text)
+                print(f"Added to joke section: {text}")
+                
+            elif 'qa tip of the day' in text.lower():
+                # Find nested items
+                nested_ul = item.find('ul')
+                if nested_ul:
+                    for nested_item in nested_ul.find_all('li', recursive=False):
+                        nested_text = nested_item.get_text(strip=True)
+                        sections['qa_tip'].append(nested_text)
+                        print(f"Added to qa_tip section: {nested_text}")
+                        
+            elif 'important reminder' in text.lower():
+                # Find nested items
+                nested_ul = item.find('ul')
+                if nested_ul:
+                    for nested_item in nested_ul.find_all('li', recursive=False):
+                        nested_text = nested_item.get_text(strip=True)
+                        sections['important'].append(nested_text)
+                        print(f"Added to important section: {nested_text}")
+                        
+            elif 'metrics goals' in text.lower():
+                # Find nested items
+                nested_ul = item.find('ul')
+                if nested_ul:
+                    for nested_item in nested_ul.find_all('li', recursive=False):
+                        nested_text = nested_item.get_text(strip=True)
+                        sections['metrics'].append(nested_text)
+                        print(f"Added to metrics section: {nested_text}")
 
     print("Final sections content:")
     for section, items in sections.items():
