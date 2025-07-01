@@ -187,7 +187,16 @@ def format_message(sections, current_day):
 
 def send_reminder():
     try:
-        print(f"\n=== Starting reminder process at {datetime.now()} ===")
+        # Get current time in Pacific timezone
+        pacific_tz = pytz.timezone('America/Los_Angeles')
+        current_time = datetime.now(pacific_tz)
+        
+        # Only proceed if it's the correct time
+        if not is_correct_time():
+            print(f"Current time {current_time.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
+            return
+        
+        print(f"\n=== Starting reminder process at {current_time} ===")
         
         current_day = get_current_day()
         print(f"Current day: {current_day}")
