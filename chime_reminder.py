@@ -51,14 +51,14 @@ def extract_content(html_content):
         print(f"Found main unordered list: {main_ul}")
         
         # Process top-level list items
-        for item in ma main_ul.find_all('li', recursive=False):
+        for item in main_ul.find_all('li', recursive=False):
             text = item.get_text(strip=True)
             print(f"Processing main item: {text}")
             
             if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
-                
+                   
             elif 'qa tip of the day' in text.lower():
                 # Find nested items
                 nested_ul = item.find('ul')
