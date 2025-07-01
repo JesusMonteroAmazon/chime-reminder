@@ -36,7 +36,7 @@ class SimpleQuipClient:
             
 def extract_content(html_content):
     print("Extracting content from HTML...")
-    print(f"HTML content: {html_content[:500]}...")  # Print first 500 characters of HTML
+    print(f"HTML content: {html_content[:500]}...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
@@ -45,57 +45,53 @@ def extract_content(html_content):
         'metrics': []
     }
 
-    # Find the main unordered list
-    main_ul = soup.find('ul', recursive=False)
+    # Find any unordered list in the document
+    main_ul = soup.find('div', attrs={'data-section-style': '5'}).find('ul')
     if main_ul:
         print(f"Found main unordered list: {main_ul}")
         
-        # Process top-level list items
-        for item in main_ul.find_all('li', recursive=False):
+        # Process list items
+        for item in main_ul.find_all('li'):
             text = item.get_text(strip=True)
-            print(f"Processing main item: {text}")
+            print(f"Processing item: {text}")
             
+            # Handle each section based on its content
             if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
                 print(f"Added to joke section: {text}")
-                
             elif 'qa tip of the day' in text.lower():
-                # Find nested items
-                nested_ul = item.find('ul')
-                if nested_ul:
-                    for nested_item in nested_ul.find_all('li', recursive=False):
-                        nested_text = nested_item.get_text(strip=True)
-                        sections['qa_tip'].append(nested_text)
-                        print(f"Added to qa_tip section: {nested_text}")
-                else:
-                    sections['qa_tip'].append(text)
-                    print(f"Added to qa_tip section: {text}")
-                        
+                if ':' in text:
+                    # This is a header item, look for nested items
+                    nested_ul = item.find_next('ul')
+                    if nested_ul:
+                        for nested_item in nested_ul.find_all('li'):
+                            nested_text = nested_item.get_text(strip=True)
+                            sections['qa_tip'].append(nested_text)
+                            print(f"Added to qa_tip section: {nested_text}")
             elif 'important reminder' in text.lower():
-                # Find nested items
-                nested_ul = item.find('ul')
-                if nested_ul:
-                    for nested_item in nested_ul.find_all('li', recursive=False):
-                        nested_text = nested_item.get_text(strip=True)
-                        sections['important'].append(nested_text)
-                        print(f"Added to important section: {nested_text}")
-                else:
-                    sections['important'].append(text)
-                    print(f"Added to important section: {text}")
-                        
+                if ':' in text:
+                    # This is a header item, look for nested items
+                    nested_ul = item.find_next('ul')
+                    if nested_ul:
+                        for nested_item in nested_ul.find_all('li'):
+                            nested_text = nested_item.get_text(strip=True)
+                            sections['important'].append(nested_text)
+                            print(f"Added to important section: {nested_text}")
             elif 'metrics goals' in text.lower():
-                # Find nested items
-                nested_ul = item.find('ul')
-                if nested_ul:
-                    for nested_item in nested_ul.find_all('li', recursive=False):
-                        nested_text = nested_item.get_text(strip=True)
-                        sections['metrics'].append(nested_text)
-                        print(f"Added to metrics section: {nested_text}")
-                else:
-                    sections['metrics'].append(text)
-                    print(f"Added to metrics section: {text}")
+                if ':' in text:
+                    # This is a header item, look for nested items
+                    nested_ul = item.find_next('ul')
+                    if nested_ul:
+                        for nested_item in nested_ul.find_all('li'):
+                            nested_text = nested_item.get_text(strip=True)
+                            sections['metrics'].append(nested_text)
+                            print(f"Added to metrics section: {nested_text}")
+            elif any(x in text.lower() for x in ['qa:', 'acht:', 'ptl:', 'remember']):
+                # These are individual metric items
+                sections['metrics'].append(text)
+                print(f"Added to metrics section: {text}")
     else:
-        print("No main unordered list found")
+        print("No unordered list found in the document")
 
     print("Final sections content:")
     for section, items in sections.items():
