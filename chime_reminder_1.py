@@ -128,11 +128,12 @@ def format_message(sections, current_day):
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
         for item in sections['metrics']:
-            if ':' in item:
-                key, value = item.split(':', 1)
-                message += f"• *{key.strip()}*: {value.strip()}\n"
-            else:
-                message += f"• {item.strip()}\n"
+            if 'remember to use the following link' not in item.lower():  # Skip the link in this section
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    message += f"• *{key.strip()}*: {value.strip()}\n"
+                else:
+                    message += f"• {item.strip()}\n"
         message += "\n"
 
     # Link Section
