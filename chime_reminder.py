@@ -9,7 +9,7 @@ QUIP_DOC_ID = os.environ['QUIP_DOC_ID']
 
 class SimpleQuipClient:
     def __init__(self, access_token):
-        self.access_token = accescess_token
+        self.access_token = access_token  # Fixed parameter name
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
