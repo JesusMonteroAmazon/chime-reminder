@@ -1,8 +1,8 @@
 import requests
 import os
 from bs4 import BeautifulSoup
-from datetime import datetime
 import pytz
+from datetime import datetime, time
 import re
 
 CHIME_WEBHOOK_URL_1 = os.environ['CHIME_WEBHOOK_URL_1']
@@ -11,20 +11,28 @@ QUIP_DOC_ID_1 = os.environ['QUIP_DOC_ID_1']
 FORCE_SEND = os.environ.get('FORCE_SEND', 'false').lower() == 'true'
 
 def is_correct_time():
-    # Get current time in UTC
-    utc_now = datetime.now(pytz.UTC)
-    
-    # Convert to Pacific time
+    # Get current time in Pacific timezone
     pacific_tz = pytz.timezone('America/Los_Angeles')
-    pacific_now = utc_now.astimezone(pacific_tz)
+    current_time = datetime.now(pacific_tz)
     
-    current_hour = pacific_now.hour
-    current_minute = pacific_now.minute
+    # Define the times to send the reminder (10:00 AM and 2:00 PM Pacific)
+    send_times = [time(12, 0), time(14, 0)]
     
-    print(f"Current Pacific time: {pacific_now.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    # Check if current time matches any of the send times (within a 5-minute window)
+    for send_time in send_times:
+        if (current_time.hour == send_time.hour and 
+            current_time.minute >= send_time.minute and 
+            current_time.minute < send_time.minute + 5):
+            return True
     
-    # Check if it's 7:00 AM or 2:00 PM Pacific
-    return (current_hour == 10 and current_minute == 0) or (current_hour == 14 and current_minute == 0) or FORCE_SEND
+    return False
+
+# In the main execution block:
+if __name__ == "__main__":
+    if is_correct_time() or (os.environ.get('FORCE_SEND', 'false').lower() == 'true'):
+        send_reminder()
+    else:
+        print(f"Current time is not a scheduled reminder time. Skipping.")
 
 def get_current_day():
     pacific_tz = pytz.timezone('America/Los_Angeles')
