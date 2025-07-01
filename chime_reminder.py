@@ -35,30 +35,31 @@ class SimpleQuipClient:
             response.raise_for_status()
             
 def extract_content(html_content):
-    print("Extracting content from HTML...")
+    print("Extrxtracting content from HTML...")
     print(f"HTML content: {html_content[:500]}...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': [],
         'qa_tip': [],
         'important': [],
-        'metrics': []
+        'metrics': [],
+        'link': []
     }
 
     # Find any unordered list in the document
-    main_ul = soup.find('div', attrs={'data-section-style': '5'}).find('ul')
+    main_ul = soup.fi.find('div', attrs={'data-section-style': '5'}).find('ul')
     if main_ul:
         print(f"Found main unordered list: {main_ul}")
         
         # Process list items
         for item in main_ul.find_all('li'):
-            text = item.get_text(strip=True)
+            text = iteitem.get_text(strip=True)
             print(f"Processing item: {text}")
             
             # Handle each section based on its content
             if 'joke of the day' in text.lower():
                 sections['joke'].append(text)
-                print(f"Added to joke section: {text}")
+                print(f"Added to jo joke section: {text}")
             elif 'qa tip of the day' in text.lower():
                 if ':' in text:
                     # This is a header item, look for nested items
@@ -84,12 +85,12 @@ def extract_content(html_content):
                     if nested_ul:
                         for nested_item in nested_ul.find_all('li'):
                             nested_text = nested_item.get_text(strip=True)
-                            sections['metrics'].append(nested_text)
-                            print(f"Added to metrics section: {nested_text}")
-            elif any(x in text.lower() for x in ['qa:', 'acht:', 'ptl:', 'remember']):
-                # These are individual metric items
-                sections['metrics'].append(text)
-                print(f"Added to metrics section: {text}")
+                            if 'remember' in nested_text.lower():
+                                sections['link'].append(nested_text)
+                                print(f"Added to link section: {nested_text}")
+                            else:
+                                sections['metrics'].append(nested_text)
+                                print(f"Added to metrics section: {nested_text}")
     else:
         print("No unordered list found in the document")
 
@@ -115,38 +116,33 @@ def format_message(sections):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            if not item.lower().startswith('qa tip of the day'):
-                message += f"• {item.strip()}\n"
+            message += f"• {item.strip()}\n"
         message += "\n"
 
     # Important Reminder Section
     if sections['important']:
         message += "⚠️ **Important Reminder**\n"
         for item in sections['important']:
-            if not item.lower().startswith('important reminder'):
-                message += f"• {item.strip()}\n"
+            message += f"• {item.strip()}\n"
         message += "\n"
 
     # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
-        link_text = ""
-        metrics_items = []
-        
         for item in sections['metrics']:
-            if 'remember' in item.lower():
-                if ':' in item:
-                    _, value = item.split(':', 1)
-                    link_text = f"🔗 {value.strip()}"
-            elif ':' in item and not item.lower().startswith('metrics goals'):
+            if ':' in item:
                 key, value = item.split(':', 1)
-                value = value.strip().rstrip(',').strip()
-                metrics_items.append(f"• *{key.strip()}*: {value}")
-        
-        message += "\n".join(metrics_items) + "\n"
-        if link_text:
-            message += f"\n{link_text}\n"
+                message += f"• *{key.strip()}*: {value.strip()}\n"
+            else:
+                message += f"• {item.strip()}\n"
         message += "\n"
+
+    # Link Section
+    if sections['link']:
+        for item in sections['link']:
+            if ':' in item:
+                _, value = item.split(':', 1)
+                message += f"🔗 {value.strip()}\n\n"
 
     # Add footer
     message += "-------------------\n"
