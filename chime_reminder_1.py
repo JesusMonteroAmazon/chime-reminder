@@ -47,65 +47,38 @@ def extract_content(html_content):
         'qa_tip': [],
         'important': [],
         'metrics': [],
-        'link': [],
-        'day': []  # New section for day-specific content
+        'link': []
     }
 
     try:
-        # Find any unordered list in the document
         div = soup.find('div', attrs={'data-section-style': '5'})
         if div:
             main_ul = div.find('ul')
             if main_ul:
                 print(f"Found main unordered list: {main_ul}")
                 
-                # Process list items
+                current_section = None
                 for item in main_ul.find_all('li'):
                     text = item.get_text(strip=True)
                     print(f"Processing item: {text}")
                     
-                    # Handle each section based on its content
                     if 'joke of the day' in text.lower():
+                        current_section = 'joke'
                         sections['joke'].append(text)
-                        print(f"Added to joke section: {text}")
                     elif 'qa tip of the day' in text.lower():
-                        if ':' in text:
-                            # This is a header item, look for nested items
-                            nested_ul = item.find_next('ul')
-                            if nested_ul:
-                                for nested_item in nested_ul.find_all('li'):
-                                    nested_text = nested_item.get_text(strip=True)
-                                    sections['qa_tip'].append(nested_text)
-                                    print(f"Added to qa_tip section: {nested_text}")
+                        current_section = 'qa_tip'
                     elif 'important reminder' in text.lower():
-                        if ':' in text:
-                            # This is a header item, look for nested items
-                            nested_ul = item.find_next('ul')
-                            if nested_ul:
-                                for nested_item in nested_ul.find_all('li'):
-                                    nested_text = nested_item.get_text(strip=True)
-                                    sections['important'].appappend(nested_text)
-                                    print(f"Added to important section: {nested_text}")
+                        current_section = 'important'
                     elif 'metrics goals' in text.lower():
-                        if ':' in text:
-                            # This is a header item, look for nested items
-                            nested_ul = item.find_next('ul')
-                            if nested_ul:
-                                for nested_item in nested_ul.find_all('li'):
-                                    nested_text = nested_item.get_text(strip=True)
-                                    if 'remember' in nested_text.lower():
-                                        sections['link'].append(nested_text)
-                                        print(f"Added to link section: {nested_text}")
-                                    else:
-                                        sections['metrics'].append(nested_text)
-                                        print(f"Added to metrics section: {nested_text}")
-                    
-                    # New condition to check for day-specific content
-                    day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
-                    if day_match:
-                        day = day_match.group(1)
-                        sections['day'].append((day, text))
-                        print(f"Added to day section: {day}: {text}")
+                        current_section = 'metrics'
+                    else:
+                        if current_section:
+                            sections[current_section].append(text)
+                            print(f"Added to {current_section} section: {text}")
+                        
+                    if 'remember to use the following link' in text.lower():
+                        sections['link'].append(text)
+                        print(f"Added to link section: {text}")
             else:
                 print("No unordered list found in the div")
         else:
@@ -122,11 +95,6 @@ def format_message(sections, current_day):
     print("Formatting message...")
     message = "🔔 **Daily Team Reminder**\n\n"
 
-    for day, content in sections['day']:
-        if day == current_day:
-            message += f"📅 **{day}'s Reminder**\n"
-            message += f"• {content.strip()}\n\n"
-            
     # Joke Section
     if sections['joke']:
         message += "😄 **Joke of the Day**\n"
@@ -140,7 +108,13 @@ def format_message(sections, current_day):
     if sections['qa_tip']:
         message += "💡 **QA Tip of the Day**\n"
         for item in sections['qa_tip']:
-            message += f"• {item.strip()}\n"
+            day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', item)
+            if day_match:
+                day = day_match.group(1)
+                if day == current_day:
+                    message += f"• {item.strip()}\n"
+            else:
+                message += f"• {item.strip()}\n"
         message += "\n"
 
     # Important Reminder Section
