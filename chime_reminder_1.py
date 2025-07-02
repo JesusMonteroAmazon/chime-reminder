@@ -1,7 +1,7 @@
 import requests
 import os
 from bs4 import BeautifulSoup
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import pytz
 import re
 
@@ -16,20 +16,13 @@ def is_correct_time():
     
     # Define the times to send the reminders (10:00 AM and 2:00 PM Pacific)
     send_times = [
-        {'hour': 10, 'minute': 0},  # 10:00 AM
-        {'hour': 14, 'minute': 0}   # 2:00 PM
+        time(10, 0),  # 10:00 AM
+        time(14, 0)   # 2:00 PM
     ]
     
-    current_hour = current_time.hour
-    current_minute = current_time.minute
-    
-    print(f"Current Pacific time: {current_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-    
-    # Check if current time matches any of the send times (within a 5-minute window)
+    # Check if current time is within 5 minutes of the scheduled times
     for send_time in send_times:
-        if (current_hour == send_time['hour'] and 
-            current_minute >= send_time['minute'] and 
-            current_minute < send_time['minute'] + 5):
+        if abs(current_time.time() - send_time) <= timedelta(minutes=5):
             return True
     
     return False
