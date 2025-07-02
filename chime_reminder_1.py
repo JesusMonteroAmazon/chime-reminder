@@ -43,7 +43,7 @@ def get_current_day():
     return datetime.now(pacific_tz).strftime('%A')
 
 def extract_content(html_content):
-    print("Extracting content from HTML...")
+    print("\n=== Starting content extraction ===")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
         'joke': {'Sunday': [], 'Monday': [], 'Tuesday': [], 'Wednesday': [], 'Thursday': [], 'Friday': [], 'Saturday': []},
@@ -56,94 +56,97 @@ def extract_content(html_content):
     try:
         div = soup.find('div', attrs={'data-section-style': '5'})
         if div:
+            print("Found main div")
             main_ul = div.find('ul')
             if main_ul:
-                for item in main_ul.find_all('li', recursive=False):  # Get only top-level items
+                print("Found main ul")
+                for item in main_ul.find_all('li', recursive=False):
                     text = item.get_text(strip=True)
-                    print(f"Processing main item: {text}")
+                    print(f"\nProcessing main section: {text}")
                     
-                    # Determine the section based on the header
                     if 'joke of the day' in text.lower():
-                        # Find all sub-items under this section
+                        print("Found Joke section")
                         nested_ul = item.find('ul')
                         if nested_ul:
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['joke'][day].append(content)
-                                    print(f"Added joke for {day}: {content}")
+                                print(f"Processing joke item: {sub_text}")
+                                if '(' in sub_text and ')' in sub_text:
+                                    day = sub_text[sub_text.find('(')+1:sub_text.find(')')].strip()
+                                    if day in sections['joke']:
+                                        content = sub_text[sub_text.find(')')+1:].strip()
+                                        sections['joke'][day].append(content)
+                                        print(f"Added joke for {day}: {content}")
                                 
                     elif 'qa tip of the day' in text.lower():
+                        print("Found QA Tip section")
                         nested_ul = item.find('ul')
                         if nested_ul:
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['qa_tip'][day].append(content)
-                                    print(f"Added QA tip for {day}: {content}")
+                                print(f"Processing QA tip item: {sub_text}")
+                                if '(' in sub_text and ')' in sub_text:
+                                    day = sub_text[sub_text.find('(')+1:sub_text.find(')')].strip()
+                                    if day in sections['qa_tip']:
+                                        content = sub_text[sub_text.find(')')+1:].strip()
+                                        sections['qa_tip'][day].append(content)
+                                        print(f"Added QA tip for {day}: {content}")
                                 
                     elif 'important reminder' in text.lower():
+                        print("Found Important Reminder section")
                         nested_ul = item.find('ul')
                         if nested_ul:
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['important'][day].append(content)
-                                    print(f"Added important reminder for {day}: {content}")
+                                print(f"Processing important reminder item: {sub_text}")
+                                if '(' in sub_text and ')' in sub_text:
+                                    day = sub_text[sub_text.find('(')+1:sub_text.find(')')].strip()
+                                    if day in sections['important']:
+                                        content = sub_text[sub_text.find(')')+1:].strip()
+                                        sections['important'][day].append(content)
+                                        print(f"Added important reminder for {day}: {content}")
                                 else:
                                     # If no day specified, add to all days
-                                    content = sub_text.strip()
                                     for day in sections['important'].keys():
-                                        sections['important'][day].append(content)
-                                    print(f"Added general important reminder: {content}")
+                                        sections['important'][day].append(sub_text)
+                                        print(f"Added general important reminder for {day}: {sub_text}")
                                 
                     elif 'metrics goals' in text.lower():
+                        print("Found Metrics Goals section")
                         nested_ul = item.find('ul')
                         if nested_ul:
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
+                                print(f"Processing metrics item: {sub_text}")
                                 if 'remember to use the following link' in sub_text.lower():
                                     sections['link'].append(sub_text)
                                     print(f"Added link: {sub_text}")
                                 else:
                                     sections['metrics'].append(sub_text)
                                     print(f"Added metric: {sub_text}")
-                                    
-            else:
-                print("No unordered list found in the div")
-        else:
-            print("No div with data-section-style='5' found")
-            
     except Exception as e:
-        print(f"Error while extracting content: {str(e)}")
+        print(f"Error during extraction: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
 
-    print("\nFinal sections content:")
-    for section, items in sections.items():
-        if isinstance(items, dict):
-            print(f"\n{section}:")
-            for day, day_items in items.items():
-                print(f"  {day}: {day_items}")
-        else:
-            print(f"\n{section}: {items}")
+    print("\n=== Final content ===")
+    current_day = get_current_day()
+    print(f"Current day: {current_day}")
+    print(f"Jokes for today: {sections['joke'][current_day]}")
+    print(f"QA Tips for today: {sections['qa_tip'][current_day]}")
+    print(f"Important reminders for today: {sections['important'][current_day]}")
+    print(f"Metrics: {sections['metrics']}")
+    print(f"Links: {sections['link']}")
+    
     return sections
 
 def format_message(sections, current_day):
-    print(f"Formatting message for {current_day}...")
+    print("\n=== Formatting message ===")
     message = "🔔 **Daily Team Reminder**\n\n"
 
     # Joke Section for current day
     if sections['joke'][current_day]:
+        print(f"Adding jokes for {current_day}: {sections['joke'][current_day]}")
         message += "😄 **Joke of the Day**\n"
         for joke in sections['joke'][current_day]:
             message += f"• {joke}\n"
@@ -151,6 +154,7 @@ def format_message(sections, current_day):
 
     # QA Tip Section for current day
     if sections['qa_tip'][current_day]:
+        print(f"Adding QA tips for {current_day}: {sections['qa_tip'][current_day]}")
         message += "💡 **QA Tip of the Day**\n"
         for tip in sections['qa_tip'][current_day]:
             message += f"• {tip}\n"
@@ -158,6 +162,7 @@ def format_message(sections, current_day):
 
     # Important Reminder Section for current day
     if sections['important'][current_day]:
+        print(f"Adding important reminders for {current_day}: {sections['important'][current_day]}")
         message += "⚠️ **Important Reminder**\n"
         for reminder in sections['important'][current_day]:
             message += f"• {reminder}\n"
@@ -165,28 +170,31 @@ def format_message(sections, current_day):
 
     # Metrics Section
     if sections['metrics']:
+        print(f"Adding metrics: {sections['metrics']}")
         message += "📊 **Metrics Goals**\n"
         for metric in sections['metrics']:
-            if 'remember to use the following link' not in metric.lower():
-                if ':' in metric:
-                    key, value = metric.split(':', 1)
-                    message += f"• *{key.strip()}*: {value.strip()}\n"
-                else:
-                    message += f"• {metric.strip()}\n"
+            if ':' in metric:
+                key, value = metric.split(':', 1)
+                message += f"• *{key.strip()}*: {value.strip()}\n"
+            else:
+                message += f"• {metric}\n"
         message += "\n"
 
     # Link Section
     if sections['link']:
-        message += "🔗 Links:\n"
+        print(f"Adding links: {sections['link']}")
         for link in sections['link']:
-            message += f"• {link}\n"
+            if ':' in link:
+                _, value = link.split(':', 1)
+                message += f"🔗 {value.strip()}\n"
         message += "\n"
 
     # Add footer
     message += "-------------------\n"
     message += "Have a great day! 🌟"
 
-    print(f"Formatted message:\n{message}")
+    print("\nFinal message:")
+    print(message)
     return message.strip()
 
 def send_reminder():
