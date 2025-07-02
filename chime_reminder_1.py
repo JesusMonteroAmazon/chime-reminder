@@ -1,14 +1,13 @@
 import requests
 import os
 from bs4 import BeautifulSoup
-import pytz
 from datetime import datetime, time
+import pytz
 import re
 
 CHIME_WEBHOOK_URL_1 = os.environ['CHIME_WEBHOOK_URL_1']
 QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
 QUIP_DOC_ID_1 = os.environ['QUIP_DOC_ID_1']
-FORCE_SEND = os.environ.get('FORCE_SEND', 'false').lower() == 'true'
 
 def is_correct_time():
     # Get current time in Pacific timezone
@@ -16,23 +15,24 @@ def is_correct_time():
     current_time = datetime.now(pacific_tz)
     
     # Define the times to send the reminder (10:00 AM and 2:00 PM Pacific)
-    send_times = [time(12, 0), time(14, 0)]
+    send_times = [
+        {'hour': 10, 'minute': 0},  # 10:00 AM
+        {'hour': 14, 'minute': 0}   # 2:00 PM
+    ]
+    
+    current_hour = current_time.hour
+    current_minute = current_time.minute
+    
+    print(f"Current Pacific time: {current_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     
     # Check if current time matches any of the send times (within a 5-minute window)
     for send_time in send_times:
-        if (current_time.hour == send_time.hour and 
-            current_time.minute >= send_time.minute and 
-            current_time.minute < send_time.minute + 5):
+        if (current_hour == send_time['hour'] and 
+            current_minute >= send_time['minute'] and 
+            current_minute < send_time['minute'] + 5):
             return True
     
     return False
-
-# In the main execution block:
-if __name__ == "__main__":
-    if is_correct_time() or (os.environ.get('FORCE_SEND', 'false').lower() == 'true'):
-        send_reminder()
-    else:
-        print(f"Current time is not a scheduled reminder time. Skipping.")
 
 def get_current_day():
     pacific_tz = pytz.timezone('America/Los_Angeles')
@@ -179,16 +179,13 @@ def format_message(sections, current_day):
 
 def send_reminder():
     try:
-        # Get current time in UTC
-        utc_now = datetime.now(pytz.UTC)
-        
-        # Convert to Pacific time
+        # Get current time in Pacific timezone
         pacific_tz = pytz.timezone('America/Los_Angeles')
-        pacific_now = utc_now.astimezone(pacific_tz)
+        pacific_now = datetime.now(pacific_tz)
         
         # Only proceed if it's the correct time or FORCE_SEND is True
-        if not is_correct_time():
-            prinrint(f"Current time {pacific_now.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
+        if not is_correct_time() and os.environ.get('FORCE_SEND', 'false').lower() != 'true':
+            print(f"Current time {pacific_now.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
             return
         
         print(f"\n=== Starting reminder process at {pacific_now} ===")
