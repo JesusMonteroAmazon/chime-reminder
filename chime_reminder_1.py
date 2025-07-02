@@ -129,24 +129,17 @@ def format_message(sections, current_day):
             message += f"• {reminder}\n"
         message += "\n"
 
-    # Metrics Section (always included)
+    # Metrics Section
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
-        for item in sections['metrics']:
-            if 'remember to use the following link' not in item.lower():
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    message += f"• *{key.strip()}*: {value.strip()}\n"
-                else:
-                    message += f"• {item.strip()}\n"
+        for metric in sections['metrics']:
+            message += f"• {metric}\n"
         message += "\n"
 
     # Link Section
     if sections['link']:
-        for item in sections['link']:
-            if ':' in item:
-                _, value = item.split(':', 1)
-                message += f"🔗 {value.strip()}\n\n"
+        for link in sections['link']:
+            message += f"🔗 {link}\n\n"
 
     # Add footer
     message += "-------------------\n"
