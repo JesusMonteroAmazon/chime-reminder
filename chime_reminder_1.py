@@ -85,7 +85,7 @@ def extract_content(html_content):
                     if current_section:
                         # Check for day-specific content
                         day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
-                        if day_match and current_section in ['joke', 'qa_tip', 'important']:
+                        if day_match and current_section in ['joke', 'qa_tip']:
                             day = day_match.group(1)
                             content = re.sub(r'\([^)]*\)\s*', '', text).strip()
                             sections[current_section][day].append(content)
@@ -97,12 +97,18 @@ def extract_content(html_content):
                             else:
                                 sections['metrics'].append(text)
                                 print(f"Added metric: {text}")
-                        elif current_section in ['joke', 'qa_tip', 'important']:
+                        elif current_section in ['joke', 'qa_tip']:
                             # For items without a day prefix, add to all days
                             content = text.strip()
                             for day in sections[current_section].keys():
                                 sections[current_section][day].append(content)
                             print(f"Added general {current_section}: {content}")
+                        elif current_section == 'important':
+                            # For important reminders, add to all days
+                            content = text.strip()
+                            for day in sections['important'].keys():
+                                sections['important'][day].append(content)
+                            print(f"Added important reminder: {content}")
                 
     except Exception as e:
         print(f"Error during extraction: {str(e)}")
@@ -123,7 +129,7 @@ def extract_content(html_content):
             print(f"\n{section}: {items}")
     
     return sections
-
+    
 def format_message(sections, current_day):
     print("\n=== Formatting message ===")
     message = "🔔 **Daily Team Reminder**\n\n"
