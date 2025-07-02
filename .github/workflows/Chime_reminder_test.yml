@@ -3,7 +3,12 @@ name: Daily Reminders
 on:
   schedule:
     - cron: '*/5 * * * *'  # Runs every 5 minutes
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:  # Allows manual trigger with inputs
+    inputs:
+      force_send:
+        description: 'Force send message (true/false)'
+        required: true
+        default: 'true'
 
 jobs:
   send-reminder:
@@ -27,6 +32,7 @@ jobs:
         CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
         QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
         QUIP_DOC_ID_1: ${{ secrets.QUIP_DOC_ID_1 }}
-        FORCE_SEND: 'false'
+        FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
       run: |
         python chime_reminder_1.py
+
