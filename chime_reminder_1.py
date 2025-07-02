@@ -20,10 +20,21 @@ def is_correct_time():
         time(14, 0)   # 2:00 PM
     ]
     
-    # Check if current time is within 5 minutes of the scheduled times
+    current_hour = current_time.hour
+    current_minute = current_time.minute
+    
+    print(f"Current Pacific time: {current_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    
+    # Check if current time matches any of the send times (within a 5-minute window)
     for send_time in send_times:
-        if abs(current_time.time() - send_time) <= timedelta(minutes=5):
+        if (current_hour == send_time.hour and 
+            current_minute >= send_time.minute and 
+            current_minute < send_time.minute + 5):
             return True
+    
+    # Also return True if FORCE_SEND is true
+    if os.environ.get('FORCE_SEND', 'false').lower() == 'true':
+        return True
     
     return False
 
@@ -95,7 +106,7 @@ def extract_content(html_content):
     
 def format_message(sections, current_day):
     print("Formatting message...")
-    message = "🔔 **Daily Te Team Reminder**\n\n"
+    message = "🔔 **Daily Team Reminder**\n\n"
 
     # Joke Section for current day
     if sections['joke'][current_day]:
@@ -150,8 +161,8 @@ def send_reminder():
         pacific_tz = pytz.timezone('America/Los_Angeles')
         pacific_now = datetime.now(pacific_tz)
         
-        # Only proceed if it's the correct time or FORCE_SEND is True
-        if not is_correct_time() and os.environ.get('FORCE_SEND', 'false').lower() != 'true':
+        # Only proceed if it's the correct time
+        if not is_correct_time():
             print(f"Current time {pacific_now.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
             return
         
@@ -170,8 +181,16 @@ def send_reminder():
         
         sections = extract_content(content)
         
-        if not any(sections['reminders'].values()):
-            print(f"{pacific_now}: No content found in the document")
+        # Check if any sections have content for the current day
+        has_content = (
+            bool(sections['joke'][current_day]) or 
+            bool(sections['qa_tip'][current_day]) or 
+            bool(sections['important'][current_day]) or 
+            bool(sections['metrics'])
+        )
+        
+        if not has_content:
+            print(f"{pacific_now}: No content found for {current_day}")
             return
             
         message = format_message(sections, current_day)
