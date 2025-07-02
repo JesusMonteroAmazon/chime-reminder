@@ -67,22 +67,20 @@ def extract_content(html_content):
                         # Find all sub-items under this section
                         nested_ul = item.find('ul')
                         if nested_ul:
-                            for sub_item in nested_ul.find_all('li', recursive=True):
+                            for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing joke sub-item: {sub_text}")
                                 day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
                                 if day_match:
                                     day = day_match.group(1)
                                     content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
                                     sections['joke'][day].append(content)
-                                    print(f"Added joke for {r {day}: {content}")
+                                    print(f"Added joke for {day}: {content}")
                                 
                     elif 'qa tip of the day' in text.lower():
                         nested_ul = item.find('ul')
                         if nested_ul:
-                            for sub_item in nested_ul.find_all('li', recursive=True):
+                            for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing QA tip sub-item: {sub_text}")
                                 day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
                                 if day_match:
                                     day = day_match.group(1)
@@ -93,9 +91,8 @@ def extract_content(html_content):
                     elif 'important reminder' in text.lower():
                         nested_ul = item.find('ul')
                         if nested_ul:
-                            for sub_item in nested_ul.find_all('li', recursive=True):
+                            for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing important reminder sub-item: {sub_text}")
                                 day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
                                 if day_match:
                                     day = day_match.group(1)
@@ -112,9 +109,8 @@ def extract_content(html_content):
                     elif 'metrics goals' in text.lower():
                         nested_ul = item.find('ul')
                         if nested_ul:
-                            for sub_item in nested_ul.find_all('li', recursive=True):
+                            for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing metrics sub-item: {sub_text}")
                                 if 'remember to use the following link' in sub_text.lower():
                                     sections['link'].append(sub_text)
                                     print(f"Added link: {sub_text}")
