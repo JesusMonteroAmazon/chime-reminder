@@ -1,3 +1,5 @@
+name: Daily Reminders
+
 on:
   schedule:
     - cron: '*/5 * * * *'  # Runs every 5 minutes
@@ -25,6 +27,6 @@ jobs:
         CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
         QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
         QUIP_DOC_ID_1: ${{ secrets.QUIP_DOC_ID_1 }}
-        FORCE_SEND: 'false'  # Set this to 'false' for normal operation
+        FORCE_SEND: 'false'
       run: |
         python chime_reminder_1.py
