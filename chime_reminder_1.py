@@ -14,7 +14,7 @@ def is_correct_time():
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
     
-    # Define the times to send the reminder (10:00 AM and 2:00 PM Pacific)
+    # Define the times to send the reminders (10:00 AM and 2:00 PM Pacific)
     send_times = [
         {'hour': 10, 'minute': 0},  # 10:00 AM
         {'hour': 14, 'minute': 0}   # 2:00 PM
@@ -38,41 +38,14 @@ def get_current_day():
     pacific_tz = pytz.timezone('America/Los_Angeles')
     return datetime.now(pacific_tz).strftime('%A')
 
-class SimpleQuipClient:
-    def __init__(self, access_token):
-        self.access_token = access_token
-        self.base_url = "https://platform.quip-amazon.com/1"
-
-    def get_thread(self, thread_id):
-        url = f"{self.base_url}/threads/{thread_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Accept": "application/json"
-        }
-        print(f"Fetching Quip document with URL: {url}")
-        response = requests.get(url, headers=headers)
-        print(f"Quip API Response Status: {response.status_code}")
-        
-        if response.status_code == 200:
-            json_response = response.json()
-            print(f"JSON response keys: {json_response.keys()}")
-            if 'html' not in json_response:
-                print("HTML not in JSON response, trying to get it from 'thread'")
-                json_response['html'] = json_response['thread'].get('html', '')
-            print(f"HTML content length: {len(json_response['html'])}")
-            return json_response
-        else:
-            print(f"Error response content: {response.text}")
-            response.raise_for_status()
-            
 def extract_content(html_content):
     print("Extracting content from HTML...")
     print(f"HTML content: {html_content[:500]}...")
     soup = BeautifulSoup(html_content, 'html.parser')
     sections = {
-        'joke': [],
-        'qa_tip': [],
-        'important': [],
+        'joke': {'Sunday': [], 'Monday': [], 'Tuesday': [], 'Wednesday': [], 'Thursday': [], 'Friday': [], 'Saturday': []},
+        'qa_tip': {'Sunday': [], 'Monday': [], 'Tuesday': [], 'Wednesday': [], 'Thursday': [], 'Friday': [], 'Saturday': []},
+        'important': {'Sunday': [], 'Monday': [], 'Tuesday': [], 'Wednesday': [], 'Thursday': [], 'Friday': [], 'Saturday': []},
         'metrics': [],
         'link': []
     }
@@ -85,27 +58,36 @@ def extract_content(html_content):
                 print(f"Found main unordered list: {main_ul}")
                 
                 current_section = None
-                for item in main_ul.find_all('li'):
+                for item in main_ul.find_all('li', recursive=False):  # Only top-level items
                     text = item.get_text(strip=True)
-                    print(f"Processing item: {text}")
+                    print(f"Processing main item: {text}")
                     
                     if 'joke of the day' in text.lower():
                         current_section = 'joke'
-                        sections['joke'].append(text)
                     elif 'qa tip of the day' in text.lower():
                         current_section = 'qa_tip'
                     elif 'important reminder' in text.lower():
                         current_section = 'important'
                     elif 'metrics goals' in text.lower():
                         current_section = 'metrics'
-                    else:
-                        if current_section:
-                            sections[current_section].append(text)
-                            print(f"Added to {current_section} section: {text}")
-                        
-                    if 'remember to use the following link' in text.lower():
-                        sections['link'].append(text)
-                        print(f"Added to link section: {text}")
+                    
+                    # Process sub-items
+                    if current_section in ['joke', 'qa_tip', 'important']:
+                        sub_ul = item.find('ul')
+                        if sub_ul:
+                            for sub_item in sub_ul.find_all('li'):
+                                sub_text = sub_item.get_text(strip=True)
+                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
+                                if day_match:
+                                    day = day_match.group(1)
+                                    # Remove the day prefix from the text
+                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
+                                    sections[current_section][day].append(content)
+                                    print(f"Added to {current_section} for {day}: {content}")
+                    elif current_section == 'metrics':
+                        sections['metrics'].append(text)
+                        if 'remember to use the following link' in text.lower():
+                            sections['link'].append(text)
             else:
                 print("No unordered list found in the div")
         else:
@@ -117,45 +99,37 @@ def extract_content(html_content):
     for section, items in sections.items():
         print(f"{section}: {items}")
     return sections
-
+    
 def format_message(sections, current_day):
     print("Formatting message...")
-    message = "🔔 **Daily Team Reminder**\n\n"
+    message = "🔔 **Daily Te Team Reminder**\n\n"
 
-    # Joke Section
-    if sections['joke']:
+    # Joke Section for current day
+    if sections['joke'][current_day]:
         message += "😄 **Joke of the Day**\n"
-        for item in sections['joke']:
-            if ':' in item:
-                _, joke = item.split(':', 1)
-                message += f"• {joke.strip()}\n"
+        for joke in sections['joke'][current_day]:
+            message += f"• {joke}\n"
         message += "\n"
 
-    # QA Tip Section
-    if sections['qa_tip']:
+    # QA Tip Section for current day
+    if sections['qa_tip'][current_day]:
         message += "💡 **QA Tip of the Day**\n"
-        for item in sections['qa_tip']:
-            day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', item)
-            if day_match:
-                day = day_match.group(1)
-                if day == current_day:
-                    message += f"• {item.strip()}\n"
-            else:
-                message += f"• {item.strip()}\n"
+        for tip in sections['qa_tip'][current_day]:
+            message += f"• {tip}\n"
         message += "\n"
 
-    # Important Reminder Section
-    if sections['important']:
+    # Important Reminder Section for current day
+    if sections['important'][current_day]:
         message += "⚠️ **Important Reminder**\n"
-        for item in sections['important']:
-            message += f"• {item.strip()}\n"
+        for reminder in sections['important'][current_day]:
+            message += f"• {reminder}\n"
         message += "\n"
 
-    # Metrics Section
+    # Metrics Section (always included)
     if sections['metrics']:
         message += "📊 **Metrics Goals**\n"
         for item in sections['metrics']:
-            if 'remember to use the following link' not in item.lower():  # Skip the link in this section
+            if 'remember to use the following link' not in item.lower():
                 if ':' in item:
                     key, value = item.split(':', 1)
                     message += f"• *{key.strip()}*: {value.strip()}\n"
@@ -203,7 +177,7 @@ def send_reminder():
         
         sections = extract_content(content)
         
-        if not any(sections.values()):
+        if not any(sections['reminders'].values()):
             print(f"{pacific_now}: No content found in the document")
             return
             
@@ -228,6 +202,33 @@ def send_reminder():
         print(f"{pacific_now}: Error occurred: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
+
+class SimpleQuipClient:
+    def __init__(self, access_token):
+        self.access_token = access_token
+        self.base_url = "https://platform.quip-amazon.com/1"
+
+    def get_thread(self, thread_id):
+        url = f"{self.base_url}/threads/{thread_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json"
+        }
+        print(f"Fetching Quip document with URL: {url}")
+        response = requests.get(url, headers=headers)
+        print(f"Quip API Response Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            json_response = response.json()
+            print(f"JSON response keys: {json_response.keys()}")
+            if 'html' not in json_response:
+                print("HTML not in JSON response, trying to get it from 'thread'")
+                json_response['html'] = json_response['thread'].get('html', '')
+            print(f"HTML content length: {len(json_response['html'])}")
+            return json_response
+        else:
+            print(f"Error response content: {response.text}")
+            response.raise_for_status()
 
 if __name__ == "__main__":
     send_reminder()
