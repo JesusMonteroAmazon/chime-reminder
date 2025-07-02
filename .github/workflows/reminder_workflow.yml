@@ -2,7 +2,7 @@ name: Chime Daily Reminders
 
 on:
   schedule:
-    - cron: '*0 */6 * * *'  # Runs every 5 minutes
+    - cron: '0 */6 * * *'  # Runs every 6 hours
   workflow_dispatch:  # Allows manual trigger with inputs
     inputs:
       force_send:
