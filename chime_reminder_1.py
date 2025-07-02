@@ -136,7 +136,7 @@ def format_message(sections, current_day):
         message += "\n"
 
     # Important Reminder Section for current day
-    if sections['important'][current_day]:
+    if sections['important'].get(current_day, []):
         message += "⚠️ **Important Reminder**\n"
         for reminder in sections['important'][current_day]:
             message += f"• {reminder}\n"
