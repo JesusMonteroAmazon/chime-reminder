@@ -32,7 +32,7 @@ jobs:
         CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
         QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
         QUIP_DOC_ID_1: ${{ secrets.QUIP_DOC_ID_1 }}
-        FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
+        FORCE_SEND: ${{ github.event.inputs.force_send || 'true' }}
       run: |
         python chime_reminder_1.py
 
