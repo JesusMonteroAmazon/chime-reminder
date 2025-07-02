@@ -71,12 +71,12 @@ def extract_content(html_content):
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
                                 print(f"Processing joke item: {sub_text}")
-                                if '(' in sub_text and ')' in sub_text:
-                                    day = sub_text[sub_text.find('(')+1:sub_text.find(')')].strip()
-                                    if day in sections['joke']:
-                                        content = sub_text[sub_text.find(')')+1:].strip()
-                                        sections['joke'][day].append(content)
-                                        print(f"Added joke for {day}: {content}")
+                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
+                                if day_match:
+                                    day = day_match.group(1)
+                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
+                                    sections['joke'][day].append(content)
+                                    print(f"Added joke for {day}: {content}")
                                 
                     elif 'qa tip of the day' in text.lower():
                         print("Found QA Tip section")
@@ -85,12 +85,12 @@ def extract_content(html_content):
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
                                 print(f"Processing QA tip item: {sub_text}")
-                                if '(' in sub_text and ')' in sub_text:
-                                    day = sub_text[sub_text.find('(')+1:sub_text.find(')')].strip()
-                                    if day in sections['qa_tip']:
-                                        content = sub_text[sub_text.find(')')+1:].strip()
-                                        sections['qa_tip'][day].append(content)
-                                        print(f"Added QA tip for {day}: {content}")
+                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
+                                if day_match:
+                                    day = day_match.group(1)
+                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
+                                    sections['qa_tip'][day].append(content)
+                                    print(f"Added QA tip for {day}: {content}")
                                 
                     elif 'important reminder' in text.lower():
                         print("Found Important Reminder section")
@@ -99,17 +99,16 @@ def extract_content(html_content):
                             for sub_item in nested_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
                                 print(f"Processing important reminder item: {sub_text}")
-                                if '(' in sub_text and ')' in sub_text:
-                                    day = sub_text[sub_text.find('(')+1:sub_text.find(')')].strip()
-                                    if day in sections['important']:
-                                        content = sub_text[sub_text.find(')')+1:].strip()
-                                        sections['important'][day].append(content)
-                                        print(f"Added important reminder for {day}: {content}")
+                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
+                                if day_match:
+                                    day = day_match.group(1)
+                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
+                                    sections['important'][day].append(content)
+                                    print(f"Added important reminder for {day}: {content}")
                                 else:
-                                    # If no day specified, add to all days
                                     for day in sections['important'].keys():
                                         sections['important'][day].append(sub_text)
-                                        print(f"Added general important reminder for {day}: {sub_text}")
+                                    print(f"Added general important reminder: {sub_text}")
                                 
                     elif 'metrics goals' in text.lower():
                         print("Found Metrics Goals section")
@@ -124,19 +123,24 @@ def extract_content(html_content):
                                 else:
                                     sections['metrics'].append(sub_text)
                                     print(f"Added metric: {sub_text}")
+            else:
+                print("No unordered list found in the div")
+        else:
+            print("No div with data-section-style='5' found")
+            
     except Exception as e:
         print(f"Error during extraction: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
 
     print("\n=== Final content ===")
-    current_day = get_current_day()
-    print(f"Current day: {current_day}")
-    print(f"Jokes for today: {sections['joke'][current_day]}")
-    print(f"QA Tips for today: {sections['qa_tip'][current_day]}")
-    print(f"Important reminders for today: {sections['important'][current_day]}")
-    print(f"Metrics: {sections['metrics']}")
-    print(f"Links: {sections['link']}")
+    for section, items in sections.items():
+        if isinstance(items, dict):
+            print(f"\n{section}:")
+            for day, day_items in items.items():
+                print(f"  {day}: {day_items}")
+        else:
+            print(f"\n{section}: {items}")
     
     return sections
 
@@ -229,6 +233,8 @@ def send_reminder():
         payload = {
             "Content": message
         }
+
+        print(f"HTML content (first 500 characters): {content[:500]}")
         
         print(f"Sending payload: {payload}")
         response = requests.post(CHIME_WEBHOOK_URL_1, json=payload)
