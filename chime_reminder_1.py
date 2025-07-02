@@ -61,13 +61,11 @@ def extract_content(html_content):
             if main_ul:
                 print("Found main ul")
                 
-                # Process all list items
                 current_section = None
                 for item in main_ul.find_all('li'):
                     text = item.get_text(strip=True)
                     print(f"Processing item: {text}")
                     
-                    # Check for section headers
                     if 'joke of the day' in text.lower():
                         current_section = 'joke'
                         continue
@@ -81,15 +79,14 @@ def extract_content(html_content):
                         current_section = 'metrics'
                         continue
                     
-                    # Process content based on current section
                     if current_section:
-                        # Check for day-specific content
                         day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
-                        if day_match and current_section in ['joke', 'qa_tip']:
+                        if day_match:
                             day = day_match.group(1)
                             content = re.sub(r'\([^)]*\)\s*', '', text).strip()
-                            sections[current_section][day].append(content)
-                            print(f"Added {current_section} for {day}: {content}")
+                            if current_section in ['joke', 'qa_tip', 'important']:
+                                sections[current_section][day].append(content)
+                                print(f"Added {current_section} for {day}: {content}")
                         elif current_section == 'metrics':
                             if 'remember to use the following link' in text.lower():
                                 sections['link'].append(text)
@@ -97,18 +94,12 @@ def extract_content(html_content):
                             else:
                                 sections['metrics'].append(text)
                                 print(f"Added metric: {text}")
-                        elif current_section in ['joke', 'qa_tip']:
-                            # For items without a day prefix, add to all days
+                        elif current_section in ['joke', 'qa_tip', 'important']:
+                            # For items without at a day prefix, add to all days
                             content = text.strip()
                             for day in sections[current_section].keys():
                                 sections[current_section][day].append(content)
                             print(f"Added general {current_section}: {content}")
-                        elif current_section == 'important':
-                            # For important reminders, add to all days
-                            content = text.strip()
-                            for day in sections['important'].keys():
-                                sections['important'][day].append(content)
-                            print(f"Added important reminder: {content}")
                 
     except Exception as e:
         print(f"Error during extraction: {str(e)}")
@@ -116,10 +107,6 @@ def extract_content(html_content):
         print(f"Traceback: {traceback.format_exc()}")
 
     print("\n=== Final content ===")
-    print("\nRaw HTML structure:")
-    print(html_content[:1000])  # Print first 1000 characters of HTML for debugging
-    
-    print("\nExtracted content:")
     for section, items in sections.items():
         if isinstance(items, dict):
             print(f"\n{section}:")
@@ -131,12 +118,11 @@ def extract_content(html_content):
     return sections
     
 def format_message(sections, current_day):
-    print("\n=== Formatting message ===")
+    print(f"=== Formatting message for {current_day} ===")
     message = "🔔 **Daily Team Reminder**\n\n"
 
     # Joke Section for current day
     if sections['joke'][current_day]:
-        print(f"Adding jokes for {current_day}: {sections['joke'][current_day]}")
         message += "😄 **Joke of the Day**\n"
         for joke in sections['joke'][current_day]:
             message += f"• {joke}\n"
@@ -144,7 +130,6 @@ def format_message(sections, current_day):
 
     # QA Tip Section for current day
     if sections['qa_tip'][current_day]:
-        print(f"Adding QA tips for {current_day}: {sections['qa_tip'][current_day]}")
         message += "💡 **QA Tip of the Day**\n"
         for tip in sections['qa_tip'][current_day]:
             message += f"• {tip}\n"
@@ -152,7 +137,6 @@ def format_message(sections, current_day):
 
     # Important Reminder Section for current day
     if sections['important'][current_day]:
-        print(f"Adding important reminders for {current_day}: {sections['important'][current_day]}")
         message += "⚠️ **Important Reminder**\n"
         for reminder in sections['important'][current_day]:
             message += f"• {reminder}\n"
@@ -160,7 +144,6 @@ def format_message(sections, current_day):
 
     # Metrics Section
     if sections['metrics']:
-        print(f"Adding metrics: {sections['metrics']}")
         message += "📊 **Metrics Goals**\n"
         for metric in sections['metrics']:
             if ':' in metric:
@@ -172,19 +155,15 @@ def format_message(sections, current_day):
 
     # Link Section
     if sections['link']:
-        print(f"Adding links: {sections['link']}")
         for link in sections['link']:
-            if ':' in link:
-                _, value = link.split(':', 1)
-                message += f"🔗 {value.strip()}\n"
+            message += f"🔗 {link}\n"
         message += "\n"
 
     # Add footer
     message += "-------------------\n"
     message += "Have a great day! 🌟"
 
-    print("\nFinal message:")
-    print(message)
+    print(f"\nFormatted message:\n{message}")
     return message.strip()
 
 def send_reminder():
