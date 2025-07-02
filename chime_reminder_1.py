@@ -58,55 +58,88 @@ def extract_content(html_content):
         if div:
             main_ul = div.find('ul')
             if main_ul:
-                current_section = None
-                
-                # Process main sections
-                for item in main_ul.find_all('li', recursive=False):
+                for item in main_ul.find_all('li', recursive=False):  # Get only top-level items
                     text = item.get_text(strip=True)
                     print(f"Processing main item: {text}")
                     
+                    # Determine the section based on the header
                     if 'joke of the day' in text.lower():
-                        current_section = 'joke'
-                    elif 'qa tip of the day' in text.lower():
-                        current_section = 'qa_tip'
-                    elif 'important reminder' in text.lower():
-                        current_section = 'important'
-                    elif 'metrics goals' in text.lower():
-                        current_section = 'metrics'
-                    
-                    # Process sub-items
-                    if current_section in ['joke', 'qa_tip', 'important']:
-                        sub_ul = item.find('ul')
-                        if sub_ul:
-                            for sub_item in sub_ul.find_all('li'):
+                        # Find all sub-items under this section
+                        nested_ul = item.find('ul')
+                        if nested_ul:
+                            for sub_item in nested_ul.find_all('li', recursive=True):
                                 sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing sub-item: {sub_text}")
+                                print(f"Processing joke sub-item: {sub_text}")
                                 day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
                                 if day_match:
                                     day = day_match.group(1)
-                                    # Remove the day prefix
                                     content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections[current_section][day].append(content)
-                                    print(f"Added {current_section} for {day}: {content}")
+                                    sections['joke'][day].append(content)
+                                    print(f"Added joke for {r {day}: {content}")
+                                
+                    elif 'qa tip of the day' in text.lower():
+                        nested_ul = item.find('ul')
+                        if nested_ul:
+                            for sub_item in nested_ul.find_all('li', recursive=True):
+                                sub_text = sub_item.get_text(strip=True)
+                                print(f"Processing QA tip sub-item: {sub_text}")
+                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
+                                if day_match:
+                                    day = day_match.group(1)
+                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
+                                    sections['qa_tip'][day].append(content)
+                                    print(f"Added QA tip for {day}: {content}")
+                                
+                    elif 'important reminder' in text.lower():
+                        nested_ul = item.find('ul')
+                        if nested_ul:
+                            for sub_item in nested_ul.find_all('li', recursive=True):
+                                sub_text = sub_item.get_text(strip=True)
+                                print(f"Processing important reminder sub-item: {sub_text}")
+                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
+                                if day_match:
+                                    day = day_match.group(1)
+                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
+                                    sections['important'][day].append(content)
+                                    print(f"Added important reminder for {day}: {content}")
                                 else:
-                                    print(f"No day match found for: {sub_text}")
-                    elif current_section == 'metrics':
-                        sections['metrics'].append(text)
-                        if 'remember to use the following link' in text.lower():
-                            sections['link'].append(text)
-                        print(f"Added metric: {text}")
+                                    # If no day specified, add to all days
+                                    content = sub_text.strip()
+                                    for day in sections['important'].keys():
+                                        sections['important'][day].append(content)
+                                    print(f"Added general important reminder: {content}")
+                                
+                    elif 'metrics goals' in text.lower():
+                        nested_ul = item.find('ul')
+                        if nested_ul:
+                            for sub_item in nested_ul.find_all('li', recursive=True):
+                                sub_text = sub_item.get_text(strip=True)
+                                print(f"Processing metrics sub-item: {sub_text}")
+                                if 'remember to use the following link' in sub_text.lower():
+                                    sections['link'].append(sub_text)
+                                    print(f"Added link: {sub_text}")
+                                else:
+                                    sections['metrics'].append(sub_text)
+                                    print(f"Added metric: {sub_text}")
+                                    
             else:
                 print("No unordered list found in the div")
         else:
             print("No div with data-section-style='5' found")
+            
     except Exception as e:
         print(f"Error while extracting content: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
 
-    print("Final sections content:")
+    print("\nFinal sections content:")
     for section, items in sections.items():
-        print(f"{section}: {items}")
+        if isinstance(items, dict):
+            print(f"\n{section}:")
+            for day, day_items in items.items():
+                print(f"  {day}: {day_items}")
+        else:
+            print(f"\n{section}: {items}")
     return sections
 
 def format_message(sections, current_day):
