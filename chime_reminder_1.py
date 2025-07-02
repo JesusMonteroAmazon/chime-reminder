@@ -60,80 +60,60 @@ def extract_content(html_content):
             main_ul = div.find('ul')
             if main_ul:
                 print("Found main ul")
-                for item in main_ul.find_all('li', recursive=False):
+                
+                # Process all list items
+                current_section = None
+                for item in main_ul.find_all('li'):
                     text = item.get_text(strip=True)
-                    print(f"\nProcessing main section: {text}")
+                    print(f"Processing item: {text}")
                     
+                    # Check for section headers
                     if 'joke of the day' in text.lower():
-                        print("Found Joke section")
-                        nested_ul = item.find('ul')
-                        if nested_ul:
-                            for sub_item in nested_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing joke item: {sub_text}")
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['joke'][day].append(content)
-                                    print(f"Added joke for {day}: {content}")
-                                
+                        current_section = 'joke'
+                        continue
                     elif 'qa tip of the day' in text.lower():
-                        print("Found QA Tip section")
-                        nested_ul = item.find('ul')
-                        if nested_ul:
-                            for sub_item in nested_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing QA tip item: {sub_text}")
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['qa_tip'][day].append(content)
-                                    print(f"Added QA tip for {day}: {content}")
-                                
+                        current_section = 'qa_tip'
+                        continue
                     elif 'important reminder' in text.lower():
-                        print("Found Important Reminder section")
-                        nested_ul = item.find('ul')
-                        if nested_ul:
-                            for sub_item in nested_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing important reminder item: {sub_text}")
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['important'][day].append(content)
-                                    print(f"Added important reminder for {day}: {content}")
-                                else:
-                                    for day in sections['important'].keys():
-                                        sections['important'][day].append(sub_text)
-                                    print(f"Added general important reminder: {sub_text}")
-                                
+                        current_section = 'important'
+                        continue
                     elif 'metrics goals' in text.lower():
-                        print("Found Metrics Goals section")
-                        nested_ul = item.find('ul')
-                        if nested_ul:
-                            for sub_item in nested_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                print(f"Processing metrics item: {sub_text}")
-                                if 'remember to use the following link' in sub_text.lower():
-                                    sections['link'].append(sub_text)
-                                    print(f"Added link: {sub_text}")
-                                else:
-                                    sections['metrics'].append(sub_text)
-                                    print(f"Added metric: {sub_text}")
-            else:
-                print("No unordered list found in the div")
-        else:
-            print("No div with data-section-style='5' found")
-            
+                        current_section = 'metrics'
+                        continue
+                    
+                    # Process content based on current section
+                    if current_section:
+                        # Check for day-specific content
+                        day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', text)
+                        if day_match and current_section in ['joke', 'qa_tip', 'important']:
+                            day = day_match.group(1)
+                            content = re.sub(r'\([^)]*\)\s*', '', text).strip()
+                            sections[current_section][day].append(content)
+                            print(f"Added {current_section} for {day}: {content}")
+                        elif current_section == 'metrics':
+                            if 'remember to use the following link' in text.lower():
+                                sections['link'].append(text)
+                                print(f"Added link: {text}")
+                            else:
+                                sections['metrics'].append(text)
+                                print(f"Added metric: {text}")
+                        elif current_section in ['joke', 'qa_tip', 'important']:
+                            # For items without a day prefix, add to all days
+                            content = text.strip()
+                            for day in sections[current_section].keys():
+                                sections[current_section][day].append(content)
+                            print(f"Added general {current_section}: {content}")
+                
     except Exception as e:
         print(f"Error during extraction: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
 
     print("\n=== Final content ===")
+    print("\nRaw HTML structure:")
+    print(html_content[:1000])  # Print first 1000 characters of HTML for debugging
+    
+    print("\nExtracted content:")
     for section, items in sections.items():
         if isinstance(items, dict):
             print(f"\n{section}:")
@@ -234,8 +214,13 @@ def send_reminder():
             "Content": message
         }
 
-        print(f"HTML content (first 500 characters): {content[:500]}")
-        
+        thread = quip_client.get_thread(QUIP_DOC_ID_1)
+        content = thread['html']
+        print("\nHTML Content from Quip:")
+        print("=" * 50)
+        print(content[:1000])  # Print first 1000 characters
+        print("=" * 50)
+
         print(f"Sending payload: {payload}")
         response = requests.post(CHIME_WEBHOOK_URL_1, json=payload)
         print(f"Chime API Response Status: {response.status_code}")
