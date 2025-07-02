@@ -67,64 +67,46 @@ def extract_content(html_content):
                     
                     if 'joke of the day' in text.lower():
                         current_section = 'joke'
+                    elif 'qa tip of the day' in text.lower():
+                        current_section = 'qa_tip'
+                    elif 'important reminder' in text.lower():
+                        current_section = 'important'
+                    elif 'metrics goals' in text.lower():
+                        current_section = 'metrics'
+                    
+                    # Process sub-items
+                    if current_section in ['joke', 'qa_tip', 'important']:
                         sub_ul = item.find('ul')
                         if sub_ul:
                             for sub_item in sub_ul.find_all('li'):
                                 sub_text = sub_item.get_text(strip=True)
+                                print(f"Processing sub-item: {sub_text}")
                                 day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
                                 if day_match:
                                     day = day_match.group(1)
                                     # Remove the day prefix
                                     content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['joke'][day].append(content)
-                                    print(f"Added joke for {day}: {content}")
-                                    
-                    elif 'qa tip of the day' in text.lower():
-                        current_section = 'qa_tip'
-                        sub_ul = item.find('ul')
-                        if sub_ul:
-                            for sub_item in sub_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['qa_tip'][day].append(content)
-                                    print(f"Added QA tip for {day}: {content}")
-                                    
-                    elif 'important reminder' in text.lower():
-                        current_section = 'important'
-                        sub_ul = item.find('ul')
-                        if sub_ul:
-                            for sub_item in sub_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                day_match = re.match(r'\((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\)', sub_text)
-                                if day_match:
-                                    day = day_match.group(1)
-                                    content = re.sub(r'\([^)]*\)\s*', '', sub_text).strip()
-                                    sections['important'][day].append(content)
-                                    print(f"Added important reminder for {day}: {content}")
+                                    sections[current_section][day].append(content)
+                                    print(f"Added {current_section} for {day}: {content}")
                                 else:
-                                    # If no day specified, add to all days
-                                    for day in sections['important'].keys():
-                                        sections['important'][day].append(sub_text.strip())
-                                    
-                    elif 'metrics goals' in text.lower():
-                        sub_ul = item.find('ul')
-                        if sub_ul:
-                            for sub_item in sub_ul.find_all('li'):
-                                sub_text = sub_item.get_text(strip=True)
-                                if 'remember to use the following link' in sub_text.lower():
-                                    sections['link'].append(sub_text)
-                                else:
-                                    sections['metrics'].append(sub_text)
-                                print(f"Added metric: {sub_text}")
-
+                                    print(f"No day match found for: {sub_text}")
+                    elif current_section == 'metrics':
+                        sections['metrics'].append(text)
+                        if 'remember to use the following link' in text.lower():
+                            sections['link'].append(text)
+                        print(f"Added metric: {text}")
+            else:
+                print("No unordered list found in the div")
+        else:
+            print("No div with data-section-style='5' found")
     except Exception as e:
         print(f"Error while extracting content: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
 
+    print("Final sections content:")
+    for section, items in sections.items():
+        print(f"{section}: {items}")
     return sections
 
 def format_message(sections, current_day):
@@ -183,7 +165,7 @@ def send_reminder():
         pacific_tz = pytz.timezone('America/Los_Angeles')
         pacific_now = datetime.now(pacific_tz)
         
-        # Only proceed if it's the correct time
+        # Only proceed if it's the correct time or FORCE_SEND is True
         if not is_correct_time():
             print(f"Current time {pacific_now.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
             return
@@ -203,18 +185,6 @@ def send_reminder():
         
         sections = extract_content(content)
         
-        # Check if any sections have content for the current day
-        has_content = (
-            bool(sections['joke'][current_day]) or 
-            bool(sections['qa_tip'][current_day]) or 
-            bool(sections['important'][current_day]) or 
-            bool(sections['metrics'])
-        )
-        
-        if not has_content:
-            print(f"{pacific_now}: No content found for {current_day}")
-            return
-            
         message = format_message(sections, current_day)
         
         print("Sending message to Chime...")
