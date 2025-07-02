@@ -160,7 +160,7 @@ def format_message(sections, current_day):
             message += f"• {tip}\n"
         message += "\n"
 
-    # Important Re Reminder Section for current day
+    # Important Reminder Section for current day
     if sections['important'][current_day]:
         message += "⚠️ **Important Reminder**\n"
         for reminder in sections['important'][current_day]:
@@ -181,8 +181,10 @@ def format_message(sections, current_day):
 
     # Link Section
     if sections['link']:
+        message += "🔗 Links:\n"
         for link in sections['link']:
-            message += f"🔗 {link}\n\n"
+            message += f"• {link}\n"
+        message += "\n"
 
     # Add footer
     message += "-------------------\n"
