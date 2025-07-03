@@ -17,7 +17,7 @@ def is_correct_time():
     # Define the times to send the reminders (10:00 AM and 2:00 PM Pacific)
     send_times = [
         time(10, 0),  # 10:00 AM
-        time(14, 0)   # 2:00 PM
+        time(19, 0)   # 7:00 PM
     ]
     
     current_hour = current_time.hour
