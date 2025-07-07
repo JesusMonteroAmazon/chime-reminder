@@ -9,6 +9,17 @@ CHIME_WEBHOOK_URL = os.environ['CHIME_WEBHOOK_URL']
 QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
 QUIP_DOC_ID = os.environ['QUIP_DOC_ID']
 
+def get_last_run_time():
+    try:
+        with open('last_run.txt', 'r') as f:
+            return datetime.fromisoformat(f.read().strip())
+    except:
+        return None
+
+def save_last_run_time(dt):
+    with open('last_run.txt', 'w') as f:
+        f.write(dt.isoformat())
+
 def is_correct_time():
     # Get current time in Pacific timezone
     pacific_tz = pytz.timezone('America/Los_Angeles')
@@ -16,26 +27,38 @@ def is_correct_time():
     
     # Define the times to send the reminders (10:00 AM and 2:00 PM Pacific)
     send_times = [
-        time(10, 0),  # 10:00 AM
-        time(19, 0)   # 7:00 PM
+        (10, 0),  # 10:00 AM hour range
+        (14, 0)   # 2:00 PM hour range
     ]
     
     current_hour = current_time.hour
-    current_minute = current_time.minute
     
     print(f"Current Pacific time: {current_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     
-    # Check if current time matches any of the send times (within a 5-minute window)
-    for send_time in send_times:
-        if (current_hour == send_time.hour and 
-            current_minute >= send_time.minute and 
-            current_minute < send_time.minute + 5):
+    # Get last run time
+    last_run = get_last_run_time()
+    
+    # Check if current hour matches any of the send times
+    for send_hour, _ in send_times:
+        if current_hour == send_hour:
+            # If we have a last run time, check if it was in the same hour of the same day
+            if last_run is not None:
+                last_run = last_run.astimezone(pacific_tz)
+                if (last_run.date() == current_time.date() and 
+                    last_run.hour == current_hour):
+                    print(f"Message already sent for {current_hour}:00. Skipping.")
+                    return False
+            
+            # If we get here, we should send the message
+            save_last_run_time(current_time)
             return True
     
     # Also return True if FORCE_SEND is true
     if os.environ.get('FORCE_SEND', 'false').lower() == 'true':
+        save_last_run_time(current_time)
         return True
     
+    print(f"Current time {current_time.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
     return False
 
 def get_current_day():
