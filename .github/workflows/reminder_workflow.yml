@@ -10,13 +10,22 @@ on:
         required: true
         default: 'true'
 
+# Add these permissions
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   send-reminder:
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v2
-    
+      with:
+        # Add this to ensure we can push changes
+        persist-credentials: true
+        fetch-depth: 0
+        
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
