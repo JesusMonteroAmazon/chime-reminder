@@ -5,7 +5,7 @@ from datetime import datetime
 import pytz
 
 CHIME_WEBHOOK_URL = os.environ['CHIME_WEBHOOK_URL_1']
-QUIP_API_TOKEN = os.environ['QUIP_ACCESS_TOKEN']
+QUIP_API_TOKEN = os.environ['QUIP_API_TOKEN']
 QUIP_DOC_ID = os.environ['QUIP_DOCUMENT_ID_1']
 
 def extract_content(html_content):
