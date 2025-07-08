@@ -23,7 +23,7 @@ jobs:
     
     - name: Run script
       env:
-        QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
+        QUIP_API_TOKEN: Bearer ${{ secrets.QUIP_API_TOKEN }}  # Added 'Bearer ' prefix
         CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
         QUIP_DOCUMENT_ID_1: ${{ secrets.QUIP_DOCUMENT_ID_1 }}
       run: |
@@ -32,4 +32,5 @@ jobs:
         echo "CHIME_WEBHOOK_URL_1 is set: ${{ secrets.CHIME_WEBHOOK_URL_1 != '' }}"
         echo "QUIP_DOCUMENT_ID_1 is set: ${{ secrets.QUIP_DOCUMENT_ID_1 != '' }}"
         python chime_reminder_1.py
+
 
