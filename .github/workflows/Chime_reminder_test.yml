@@ -2,34 +2,58 @@ name: Send Reminders
 
 on:
   schedule:
-    - cron: '0 9 * * 1-5'  # Runs at 9:00 AM UTC Monday-Friday
-  workflow_dispatch:  # Allows manual triggering
+    - cron: '*/15 * * * *'  # Runs every 15 minutes
+  workflow_dispatch:
+    inputs:
+      force_send:
+        description: 'Force send message (true/false)'
+        required: true
+        default: 'true'
+
+# Add these permissions
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  send_reminders:
+  send-reminder:
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v2
-    
+      with:
+        # Add this to ensure we can push changes
+        persist-credentials: true
+        fetch-depth: 0
+        
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
+        python-version: '3.8'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests beautifulsoup4 pytz
     
-    - name: Run script
-      env:
-        # Remove the Bearer prefix from here - the code will add it
-        QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
-        CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
-        QUIP_DOCUMENT_ID_1: ${{ secrets.QUIP_DOCUMENT_ID_1 }}
+    - name: Create last run file if not exists
       run: |
-        echo "Checking environment variables:"
-        echo "QUIP_API_TOKEN is set: ${{ secrets.QUIP_API_TOKEN != '' }}"
-        echo "CHIME_WEBHOOK_URL_1 is set: ${{ secrets.CHIME_WEBHOOK_URL_1 != '' }}"
-        echo "QUIP_DOCUMENT_ID_1 is set: ${{ secrets.QUIP_DOCUMENT_ID_1 != '' }}"
+        touch last_run.txt
+    
+    - name: Run reminder script
+      env:
+        CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
+        QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
+        QUIP_DOCUMENT_ID_1: ${{ secrets.QUIP_DOCUMENT_ID_1 }}
+        FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
+      run: |
         python chime_reminder_1.py
+
+    - name: Commit last run time
+      if: success()
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add last_run.txt
+        git commit -m "Update last run time" || echo "No changes to commit"
+        git push
