@@ -106,29 +106,54 @@ def send_reminder():
 class SimpleQuipClient:
     def __init__(self, access_token):
         self.access_token = access_token
+        # Change the base URL to match Amazon's internal Quip instance
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
         url = f"{self.base_url}/threads/{thread_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Accept": "application/json"
-        }
-        print(f"Fetching Quip document with URL: {url}")
-        response = requests.get(url, headers=headers)
-        print(f"Quip API Response Status: {response.status_code}")
         
-        if response.status_code == 200:
-            json_response = response.json()
-            print(f"JSON response keys: {json_response.keys()}")
-            if 'html' not in json_response:
-                print("HTML not in JSON response, trying to get it from 'thread'")
-                json_response['html'] = json_response['thread'].get('html', '')
-            print(f"HTML content length: {len(json_response['html'])}")
-            return json_response
-        else:
-            print(f"Error response content: {response.text}")
-            response.raise_for_status()
+        # Print token format for debugging (first and last 4 chars)
+        token_preview = f"{self.access_token[:4]}...{self.access_token[-4:]}"
+        print(f"Using token format: {token_preview}")
+        
+        # Try different authorization header formats
+        headers = {
+            "Authorization": self.access_token if self.access_token.startswith('Bearer ') 
+                           else f"Bearer {self.access_token}",
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        
+        print(f"Fetching Quip document with URL: {url}")
+        print(f"Headers (excluding auth): {headers}")
+        
+        try:
+            # First, test the authentication
+            test_url = f"{self.base_url}/users/current"
+            test_response = requests.get(test_url, headers=headers)
+            print(f"Auth test response: {test_response.status_code}")
+            if test_response.status_code != 200:
+                print(f"Auth test failed: {test_response.text}")
+            
+            # Proceed with the actual request
+            response = requests.get(url, headers=headers)
+            print(f"Quip API Response Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                json_response = response.json()
+                print(f"JSON response keys: {json_response.keys()}")
+                if 'html' not in json_response:
+                    print("HTML not in JSON response, trying to get it from 'thread'")
+                    json_response['html'] = json_response['thread'].get('html', '')
+                print(f"HTML content length: {len(json_response['html'])}")
+                return json_response
+            else:
+                print(f"Error response content: {response.text}")
+                response.raise_for_status()
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Request error: {str(e)}")
+            raise
 
 if __name__ == "__main__":
     send_reminder()
