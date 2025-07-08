@@ -7,7 +7,7 @@ QUIP_ACCESS_TOKEN = 'WllKOU1BQnN1U2I=|1783538343|p9s1+4ghw9RpgIlqmK3Vfsu0pbuKC9z
 quip_client = QuipClient(access_token=QUIP_ACCESS_TOKEN)
 
 # Chime webhook URL
-CHIME_WEBHOOK_URL = 'https://hooks.chime.aws/incomingwebhooks/acb671ac-6d0a-4dd9-ab85-5af4592fb29d?token=emN5RkxlR3Z8MXwtNkd1LWdDTDJ2T09ybGw5dW9UT0NwVFFKU2JkV2lOR3VpWVV1VTNMVi1N'
+CHIME_WEBHOOK_URL_1 = 'https://hooks.chime.aws/incomingwebhooks/acb671ac-6d0a-4dd9-ab85-5af4592fb29d?token=emN5RkxlR3Z8MXwtNkd1LWdDTDJ2T09ybGw5dW9UT0NwVFFKU2JkV2lOR3VpWVV1VTNMVi1N'
 
 def get_quip_data(document_id):
     # Fetch the document content
@@ -49,7 +49,7 @@ def send_to_chime(data):
         'Content': message
     }
 
-    response = requests.post(CHIME_WEBWEBHOOK_URL, data=json.dumps(payload))
+    response = requests.post(CHIME_WEBWEBHOOK_URL_1, data=json.dumps(payload))
     if response.status_code != 200:
         raise ValueError(f'Request to Chime returned an error {response.status_code}, the response is:\n{response.text}')
 
