@@ -147,19 +147,12 @@ def send_reminder():
         
         sections = extract_content(content)
         
-        message = format_message(sections, current_day)
+        message = format_message(sections)  # Remove current_day parameter
         
         print("Sending message to Chime...")
         payload = {
             "Content": message
         }
-
-        thread = quip_client.get_thread(QUIP_DOCUMENT_ID_1)
-        content = thread['html']
-        print("\nHTML Content from Quip:")
-        print("=" * 50)
-        print(content[:1000])  # Print first 1000 characters
-        print("=" * 50)
 
         print(f"Sending payload: {payload}")
         response = requests.post(CHIME_WEBHOOK_URL_1, json=payload)
