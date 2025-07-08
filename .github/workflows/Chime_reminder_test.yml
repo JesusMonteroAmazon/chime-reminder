@@ -1,37 +1,25 @@
-name: Daily Reminders
+name: Send Reminders
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Runs every 5 minutes
-  workflow_dispatch:  # Allows manual trigger with inputs
-    inputs:
-      force_send:
-        description: 'Force send message (true/false)'
-        required: true
-        default: 'true'
+    - cron: '0 9 * * 1-5'  # Runs at 9:00 AM UTC Monday-Friday
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
-  send-reminder:
+  send_reminders:
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v2
-    
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'
-    
+        python-version: '3.x'
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 pytz
-    
-    - name: Run reminder script
+        pip install requests quip-api
+    - name: Run script
       env:
-        CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
-        QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
-        QUIP_DOC_ID_1: ${{ secrets.QUIP_DOC_ID_1 }}
-        FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
-      run: |
-        python chime_reminder_1.py
+        QUIP_ACCESS_TOKEN: ${{ secrets.QUIP_ACCESS_TOKEN }}
+        CHIME_WEBHOOK_URL: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
+      run: python your_script_name.py
