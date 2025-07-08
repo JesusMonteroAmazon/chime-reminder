@@ -1,124 +1,135 @@
 import requests
-import json
 import os
+from bs4 import BeautifulSoup
+from datetime import datetime
+import pytz
 
-def print_env_vars():
-    print("Environment variables:")
-    print(f"QUIP_API_TOKEN: {'Set' if os.environ.get('QUIP_API_TOKEN') else 'Not set'}")
-    print(f"CHIME_WEBHOOK_URL_1: {'Set' if os.environ.get('CHIME_WEBHOOK_URL_1') else 'Not set'}")
-    print(f"QUIP_DOCUMENT_ID_1: {'Set' if os.environ.get('QUIP_DOCUMENT_ID_1') else 'Not set'}")
+CHIME_WEBHOOK_URL = os.environ['CHIME_WEBHOOK_URL_1']
+QUIP_API_TOKEN = os.environ['QUIP_ACCESS_TOKEN']
+QUIP_DOC_ID = os.environ['QUIP_DOCUMENT_ID_1']
 
-# Quip API setup
-QUIP_API_TOKEN = os.environ.get('QUIP_API_TOKEN')
-QUIP_API_URL = 'https://platform.quip.com/1/threads/'
-
-# Chime webhook URL
-CHIME_WEBHOOK_URL = os.environ.get('CHIME_WEBHOOK_URL_1')
-
-def get_quip_data(document_id):
-    headers = {
-        'Authorization': f'Bearer {QUIP_API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
+def extract_content(html_content):
+    print("\n=== Starting content extraction ===")
+    soup = BeautifulSoup(html_content, 'html.parser')
     
-    try:
-        # First, let's test the authentication
-        test_response = requests.get('https://platform.quip.com/1/users/current', headers=headers)
-        if test_response.status_code == 401:
-            print("Authentication failed. Response:", test_response.text)
-            raise ValueError("Quip API authentication failed. Please check your access token.")
-        
-        # If authentication is successful, proceed with the document request
-        response = requests.get(f"{QUIP_API_URL}{document_id}", headers=headers)
-        
-        if response.status_code != 200:
-            print(f"Error response from Quip API: {response.text}")
-            raise ValueError(f'Request to Quip API failed with status code {response.status_code}')
-        
-        document = response.json()
-        content = document.get('html', '')
-        
-        if not content:
-            raise ValueError('No content received from Quip document')
-        
-        # Parse the HTML content
-        lines = content.split('\n')
-        data = {
-            'title': 'Follow Up reminders',
-            'tasks_on_call': {
-                'title': 'Tasks on-call',
-                'specialists': 'N/A',
-                'pending': 'N/A',
-                'distribution': 'N/A'
-            },
-            'priority': 'N/A'
+    data = {
+        'title': 'Follow Up reminders',
+        'tasks_on_call': {
+            'specialists': '',
+            'pending': '',
+            'distribution': '',
+            'priority': ''
         }
-        
-        for line in lines:
-            if 'Tasks on-call' in line:
-                data['tasks_on_call']['title'] = 'Tasks on-call'
-            elif 'Specialists on-call:' in line:
-                data['tasks_on_call']['specialists'] = line.split(':')[1].strip()
-            elif 'Tasks pending:' in line:
-                data['tasks_on_call']['pending'] = line.split(':')[1].strip()
-            elif 'Distribution:' in line:
-                data['tasks_on_call']['distribution'] = line.split(':')[1].strip()
-            elif 'Priority:' in line:
-                data['priority'] = line.split(':')[1].strip()
-        
-        return data
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Network error occurred: {str(e)}")
-        raise
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON response: {str(e)(e)}")
-        raise
-    except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        raise
-
-def send_to_chime(data):
-    message = f"*{data['title']}*\n\n"
-    message += f"*{data['tasks_on_call']['title']}*\n"
-    message += f"- Specialists on-call: {data['tasks_on_call']['specialists']}\n"
-    message += f"- Tasks pending: {data['tasks_on_call']['pending']}\n"
-    message += f"- Distribution: {data['tasks_on_call']['distribution']}\n"
-    message += f"- Priority: {data['priority']}\n"
-
-    payload = {
-        'Content': message
     }
 
     try:
-        response = requests.post(CHIME_WEBHOOK_URL, json=payload)  # Changed to json parameter
-        if response.status_code != 200:
-            print(f"Chime API response: {response.text}")
-            raise ValueError(f'Request to Chime returned an error {response.status_code}')
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending message to Chime: {str(e)}")
-        raise
+        # Find all list items
+        items = soup.find_all('li')
+        for item in items:
+            text = item.get_text(strip=True)
+            print(f"Processing item: {text}")
+            
+            if 'Specialists on-call:' in text:
+                data['tasks_on_call']['specialists'] = text.split(':', 1)[1].strip()
+            elif 'Tasks pending:' in text:
+                data['tasks_on_call']['pending'] = text.split(':', 1)[1].strip()
+            elif 'Distribution:' in text:
+                data['tasks_on_call']['distribution'] = text.split(':', 1)[1].strip()
+            elif 'Priority:' in text:
+                data['tasks_on_call']['priority'] = text.split(':', 1)[1].strip()
 
-def main():
-    print_env_vars()
+    except Exception as e:
+        print(f"Error during extraction: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+
+    return data
+
+def format_message(data):
+    message = "🔔 **Follow Up Reminders**\n\n"
     
-    document_id = os.environ.get('QUIP_DOCUMENT_ID_1')
-    if not document_id:
-        raise ValueError('QUIP_DOCUMENT_ID_1 environment variable is not set')
-    
-    if not QUIP_API_TOKEN:
-        raise ValueError('QUIP_API_TOKEN environment variable is not set')
+    message += "📋 **Tasks On-Call**\n"
+    if data['tasks_on_call']['specialists']:
+        message += f"👥 *Specialists on-call:* {data['tasks_on_call']['specialists']}\n"
+    if data['tasks_on_call']['pending']:
+        message += f"📝 *Tasks pending:* {data['tasks_on_call']['pending']}\n"
+    if data['tasks_on_call']['distribution']:
+        message += f"📊 *Distribution:* {data['tasks_on_call']['distribution']}\n"
+    if data['tasks_on_call']['priority']:
+        message += f"⚡ *Priority:* {data['tasks_on_call']['priority']}\n"
+
+    message += "\n-------------------\n"
+    message += "Have a great day! 🌟"
+
+    print(f"\nFormatted message:\n{message}")
+    return message.strip()
+
+def send_reminder():
+    try:
+        # Get current time in Pacific timezone
+        pacific_tz = pytz.timezone('America/Los_Angeles')
+        pacific_now = datetime.now(pacific_tz)
         
-    if not CHIME_WEBHOOK_URL:
-        raise ValueError('CHIME_WEBHOOK_URL_1 environment variable is not set')
-    
-    # Print token format (first and last 4 characters)
-    if len(QUIP_API_TOKEN) > 8:
-        print(f"Token format: {QUIP_API_TOKEN[:4]}...{QUIP_API_TOKEN[-4:]}")
-    
-    data = get_quip_data(document_id)
-    send_to_chime(data)
+        print(f"\n=== Starting reminder process at {pacific_now} ===")
+        
+        print(f"CHIME_WEBHOOK_URL length: {len(CHIME_WEBHOOK_URL)}")
+        print(f"QUIP_API_TOKEN length: {len(QUIP_API_TOKEN)}")
+        print(f"QUIP_DOC_ID: {QUIP_DOC_ID}")
 
-if __name__ == '__main__':
-    main()
+        quip_client = SimpleQuipClient(QUIP_API_TOKEN)
+        thread = quip_client.get_thread(QUIP_DOC_ID)
+        content = thread['html']
+        
+        data = extract_content(content)
+        message = format_message(data)
+        
+        print("Sending message to Chime...")
+        payload = {
+            "Content": message
+        }
+
+        print(f"Sending payload: {payload}")
+        response = requests.post(CHIME_WEBHOOK_URL, json=payload)
+        print(f"Chime API Response Status: {response.status_code}")
+        print(f"Chime API Response Content: {response.text}")
+        
+        if response.status_code == 200:
+            print(f"{pacific_now}: Reminder sent successfully")
+        else:
+            print(f"{pacific_now}: Failed to send reminder. Status code: {response.status_code}")
+            
+    except Exception as e:
+        print(f"{pacific_now}: Error occurred: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+
+class SimpleQuipClient:
+    def __init__(self, access_token):
+        self.access_token = access_token
+        self.base_url = "https://platform.quip-amazon.com/1"
+
+    def get_thread(self, thread_id):
+        url = f"{self.base_url}/threads/{thread_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json"
+        }
+        print(f"Fetching Quip document with URL: {url}")
+        response = requests.get(url, headers=headers)
+        print(f"Quip API Response Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            json_response = response.json()
+            print(f"JSON response keys: {json_response.keys()}")
+            if 'html' not in json_response:
+                print("HTML not in JSON response, trying to get it from 'thread'")
+                json_response['html'] = json_response['thread'].get('html', '')
+            print(f"HTML content length: {len(json_response['html'])}")
+            return json_response
+        else:
+            print(f"Error response content: {response.text}")
+            response.raise_for_status()
+
+if __name__ == "__main__":
+    send_reminder()
 
