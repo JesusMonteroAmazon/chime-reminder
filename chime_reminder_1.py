@@ -7,7 +7,7 @@ QUIP_ACCESS_TOKEN = os.environ.get('QUIP_ACCESS_TOKEN')
 QUIP_API_URL = 'https://platform.quip.com/1/threads/'
 
 # Chime webhook URL
-CHIME_WEBHOOK_URL_1 = os.environ.get('CHIME_WEBHOOK_URL_1')
+CHIME_WEBHOOK_URL = os.environ.get('CHIME_WEBHOOK_URL_1')  # Updated to match your secret name
 
 def get_quip_data(document_id):
     headers = {
@@ -20,8 +20,7 @@ def get_quip_data(document_id):
     document = response.json()
     content = document['html']
     
-    # Parse the HTML content (you may need to use a proper HTML parser for more complex documents)
-    # This is a simplified example
+    # Parse the HTML content
     lines = content.split('\n')
     data = {
         'title': 'Follow Up reminders',
@@ -55,16 +54,24 @@ def send_to_chime(data):
         'Content': message
     }
 
-    response = requests.post(CHIME_WEBHOOK_URL_1, data=json.dumps(payload))
+    response = requests.post(CHIME_WEBHOOK_URL, data=json.dumps(payload))
     if response.status_code != 200:
         raise ValueError(f'Request to Chime returned an error {response.status_code}, the response is:\n{response.text}')
 
 def main():
-    document_id = os.environ.get('QUIP_DOCUMENT_ID_1')
+    document_id = os.environ.get('QUIP_DOCUMENT_ID_1')  # Updated to match your secret name
     if not document_id:
         raise ValueError('QUIP_DOCUMENT_ID_1 environment variable is not set')
+    
+    if not QUIP_ACCESS_TOKEN:
+        raise ValueError('QUIP_ACCESS_TOKEN environment variable is not set')
+        
+    if not CHIME_WEBHOOK_URL:
+        raise ValueError('CHIME_WEBHOOK_URL_1 environment variable is not set')
+        
     data = get_quip_data(document_id)
     send_to_chime(data)
 
 if __name__ == '__main__':
     main()
+
