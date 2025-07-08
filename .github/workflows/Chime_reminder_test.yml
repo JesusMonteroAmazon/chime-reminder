@@ -17,9 +17,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests quip-api
+        pip install requests
     - name: Run script
       env:
         QUIP_ACCESS_TOKEN: ${{ secrets.QUIP_ACCESS_TOKEN }}
-        CHIME_WEBHOOK_URL: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
+        CHIME_WEBHOOK_URL_1: ${{ secrets.CHIME_WEBHOOK_URL_1 }}
+        QUIP_DOCUMENT_ID_1: ${{ secrets.QUIP_DOCUMENT_ID_1 }}
       run: python your_script_name.py
