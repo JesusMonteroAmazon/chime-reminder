@@ -2,12 +2,18 @@ import requests
 import json
 import os
 
+def print_env_vars():
+    print("Environment variables:")
+    print(f"QUIP_ACCESS_TOKEN: {'Set' if os.environ.get('QUIP_ACCESS_TOKEN') else 'Not set'}")
+    print(f"CHIME_WEBHOOK_URL_1: {'Set' if os.environ.get('CHIME_WEBHOOK_URL_1') else 'Not set'}")
+    print(f"QUIP_DOCUMENT_ID_1: {'Set' if os.environ.get('QUIP_DOCUMENT_ID_1') else 'Not set'}")
+
 # Quip API setup
 QUIP_ACCESS_TOKEN = os.environ.get('QUIP_ACCESS_TOKEN')
 QUIP_API_URL = 'https://platform.quip.com/1/threads/'
 
 # Chime webhook URL
-CHIME_WEBHOOK_URL = os.environ.get('CHIME_WEBHOOK_URL_1')  # Updated to match your secret name
+CHIME_WEBHOOK_URL = os.environ.get('CHIME_WEBHOOK_URL_1')
 
 def get_quip_data(document_id):
     headers = {
@@ -59,7 +65,9 @@ def send_to_chime(data):
         raise ValueError(f'Request to Chime returned an error {response.status_code}, the response is:\n{response.text}')
 
 def main():
-    document_id = os.environ.get('QUIP_DOCUMENT_ID_1')  # Updated to match your secret name
+    print_env_vars()
+    
+    document_id = os.environ.get('QUIP_DOCUMENT_ID_1')
     if not document_id:
         raise ValueError('QUIP_DOCUMENT_ID_1 environment variable is not set')
     
@@ -74,4 +82,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
