@@ -10,14 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
         python-version: '3.x'
+    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests
+        pip install requests beautifulsoup4 pytz
+    
     - name: Run script
       env:
         QUIP_API_TOKEN: ${{ secrets.QUIP_API_TOKEN }}
@@ -29,3 +32,4 @@ jobs:
         echo "CHIME_WEBHOOK_URL_1 is set: ${{ secrets.CHIME_WEBHOOK_URL_1 != '' }}"
         echo "QUIP_DOCUMENT_ID_1 is set: ${{ secrets.QUIP_DOCUMENT_ID_1 != '' }}"
         python chime_reminder_1.py
+
