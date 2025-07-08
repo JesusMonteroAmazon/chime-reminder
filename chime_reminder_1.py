@@ -1,17 +1,23 @@
 import requests
 import json
-from quip_api import QuipClient
+import os
 
 # Quip API setup
-QUIP_ACCESS_TOKEN = 'WllKOU1BQnN1U2I=|1783538343|p9s1+4ghw9RpgIlqmK3Vfsu0pbuKC9zxYOEY1Y999kk='
-quip_client = QuipClient(access_token=QUIP_ACCESS_TOKEN)
+QUIP_ACCESS_TOKEN = os.environ.get('QUIP_ACCESS_TOKEN')
+QUIP_API_URL = 'https://platform.quip.com/1/threads/'
 
 # Chime webhook URL
-CHIME_WEBHOOK_URL_1 = 'https://hooks.chime.aws/incomingwebhooks/acb671ac-6d0a-4dd9-ab85-5af4592fb29d?token=emN5RkxlR3Z8MXwtNkd1LWdDTDJ2T09ybGw5dW9UT0NwVFFKU2JkV2lOR3VpWVV1VTNMVi1N'
+CHIME_WEBHOOK_URL_1 = os.environ.get('CHIME_WEBHOOK_URL_1')
 
 def get_quip_data(document_id):
-    # Fetch the document content
-    document = quip_client.get_thread(document_id)
+    headers = {
+        'Authorization': f'Bearer {QUIP_ACCESS_TOKEN}'
+    }
+    response = requests.get(f"{QUIP_API_URL}{document_id}", headers=headers)
+    if response.status_code != 200:
+        raise ValueError(f'Request to Quip API failed with status code {response.status_code}')
+    
+    document = response.json()
     content = document['html']
     
     # Parse the HTML content (you may need to use a proper HTML parser for more complex documents)
@@ -49,12 +55,14 @@ def send_to_chime(data):
         'Content': message
     }
 
-    response = requests.post(CHIME_WEBWEBHOOK_URL_1, data=json.dumps(payload))
+    response = requests.post(CHIME_WEBHOOK_URL_1, data=json.dumps(payload))
     if response.status_code != 200:
         raise ValueError(f'Request to Chime returned an error {response.status_code}, the response is:\n{response.text}')
 
 def main():
-    document_id = 'aeiqAWxRHTsm'
+    document_id = os.environ.get('QUIP_DOCUMENT_ID_1')
+    if not document_id:
+        raise ValueError('QUIP_DOCUMENT_ID_1 environment variable is not set')
     data = get_quip_data(document_id)
     send_to_chime(data)
 
