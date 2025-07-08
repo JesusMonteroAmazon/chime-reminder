@@ -105,35 +105,38 @@ def send_reminder():
 
 class SimpleQuipClient:
     def __init__(self, access_token):
-        self.access_token = access_token
-        # Change the base URL to match Amazon's internal Quip instance
+        self.access_token = access_token.strip()
+        if not self.access_token.startswith('Bearer '):
+            self.access_token = f'Bearer {self.access_token}'
         self.base_url = "https://platform.quip-amazon.com/1"
 
     def get_thread(self, thread_id):
         url = f"{self.base_url}/threads/{thread_id}"
         
         # Print token format for debugging (first and last 4 chars)
-        token_preview = f"{self.access_token[:4]}...{self.access_token[-4:]}"
+        token_preview = f"{self.access_token[:10]}...{self.access_token[-4:]}"
         print(f"Using token format: {token_preview}")
         
-        # Try different authorization header formats
         headers = {
-            "Authorization": self.access_token if self.access_token.startswith('Bearer ') 
-                           else f"Bearer {self.access_token}",
+            "Authorization": self.access_token,
             "Accept": "application/json",
             "Content-Type": "application/json"
         }
         
         print(f"Fetching Quip document with URL: {url}")
-        print(f"Headers (excluding auth): {headers}")
         
         try:
             # First, test the authentication
             test_url = f"{self.base_url}/users/current"
+            print(f"Testing authentication with URL: {test_url}")
             test_response = requests.get(test_url, headers=headers)
-            print(f"Auth test response: {test_response.status_code}")
+            print(f"Auth test response status: {test_response.status_code}")
+            
             if test_response.status_code != 200:
-                print(f"Auth test failed: {test_response.text}")
+                print(f"Auth test failed with response: {test_response.text}")
+                test_response.raise_for_status()
+            else:
+                print("Authentication test successful")
             
             # Proceed with the actual request
             response = requests.get(url, headers=headers)
@@ -144,7 +147,7 @@ class SimpleQuipClient:
                 print(f"JSON response keys: {json_response.keys()}")
                 if 'html' not in json_response:
                     print("HTML not in JSON response, trying to get it from 'thread'")
-                    json_response['html'] = json_response['thread'].get('html', '')
+                    json_response['html'] = json_response.get('thread', {}).get('html', '')
                 print(f"HTML content length: {len(json_response['html'])}")
                 return json_response
             else:
