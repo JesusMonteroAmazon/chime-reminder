@@ -17,36 +17,66 @@ CHIME_WEBHOOK_URL = os.environ.get('CHIME_WEBHOOK_URL_1')
 
 def get_quip_data(document_id):
     headers = {
-        'Authorization': f'Bearer {QUIP_ACCESS_TOKEN}'
-    }
-    response = requests.get(f"{QUIP_API_URL}{document_id}", headers=headers)
-    if response.status_code != 200:
-        raise ValueError(f'Request to Quip API failed with status code {response.status_code}')
-    
-    document = response.json()
-    content = document['html']
-    
-    # Parse the HTML content
-    lines = content.split('\n')
-    data = {
-        'title': 'Follow Up reminders',
-        'tasks_on_call': {},
-        'priority': ''
+        'Authorization': f'Bearer {QUIP_ACCESS_TOKEN}',
+        'Content-Type': 'application/json'
     }
     
-    for line in lines:
-        if 'Tasks on-call' in line:
-            data['tasks_on_call']['title'] = 'Tasks on-call'
-        elif 'Specialists on-call:' in line:
-            data['tasks_on_call']['specialists'] = line.split(':')[1].strip()
-        elif 'Tasks pending:' in line:
-            data['tasks_on_call']['pending'] = line.split(':')[1].strip()
-        elif 'Distribution:' in line:
-            data['tasks_on_call']['distribution'] = line.split(':')[1].strip()
-        elif 'Priority:' in line:
-            data['priority'] = line.split(':')[1].strip()
-    
-    return data
+    try:
+        # First, let's test the authentication
+        test_response = requests.get('https://platform.quip.com/1/users/current', headers=headers)
+        if test_response.status_code == 401:
+            print("Authentication failed. Response:", test_response.text)
+            raise ValueError("Quip API authentication failed. Please check your access token.")
+        
+        # If authentication is successful, proceed with the document request
+        response = requests.get(f"{QUIP_API_URL}{document_id}", headers=headers)
+        
+        if response.status_code != 200:
+            print(f"Error response from Quip API: {response.text}")
+            raise ValueError(f'Request to Quip API failed with status code {response.status_code}')
+        
+        document = response.json()
+        content = document.get('html', '')
+        
+        if not content:
+            raise ValueError('No content received from Quip document')
+        
+        # Parse the HTML content
+        lines = content.split('\n')
+        data = {
+            'title': 'Follow Up reminders',
+            'tasks_on_call': {
+                'title': 'Tasks on-call',
+                'specialists': 'N/A',
+                'pending': 'N/A',
+                'distribution': 'N/A'
+            },
+            'priority': 'N/A'
+        }
+        
+        for line in lines:
+            if 'Tasks on-call' in line:
+                data['tasks_on_call']['title'] = 'Tasks on-call'
+            elif 'Specialists on-call:' in line:
+                data['tasks_on_call']['specialists'] = line.split(':')[1].strip()
+            elif 'Tasks pending:' in line:
+                data['tasks_on_call']['pending'] = line.split(':')[1].strip()
+            elif 'Distribution:' in line:
+                data['tasks_on_call']['distribution'] = line.split(':')[1].strip()
+            elif 'Priority:' in line:
+                data['priority'] = line.split(':')[1].strip()
+        
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Network error occurred: {str(e)}")
+        raise
+    except json.JSONDecodeError as e:
+        print(f"Error parsing JSON response: {str(e)(e)}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        raise
 
 def send_to_chime(data):
     message = f"*{data['title']}*\n\n"
@@ -60,9 +90,14 @@ def send_to_chime(data):
         'Content': message
     }
 
-    response = requests.post(CHIME_WEBHOOK_URL, data=json.dumps(payload))
-    if response.status_code != 200:
-        raise ValueError(f'Request to Chime returned an error {response.status_code}, the response is:\n{response.text}')
+    try:
+        response = requests.post(CHIME_WEBHOOK_URL, json=payload)  # Changed to json parameter
+        if response.status_code != 200:
+            print(f"Chime API response: {response.text}")
+            raise ValueError(f'Request to Chime returned an error {response.status_code}')
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending message to Chime: {str(e)}")
+        raise
 
 def main():
     print_env_vars()
@@ -76,9 +111,14 @@ def main():
         
     if not CHIME_WEBHOOK_URL:
         raise ValueError('CHIME_WEBHOOK_URL_1 environment variable is not set')
-        
+    
+    # Print token format (first and last 4 characters)
+    if len(QUIP_ACCESS_TOKEN) > 8:
+        print(f"Token format: {QUIP_ACCESS_TOKEN[:4]}...{QUIP_ACCESS_TOKEN[-4:]}")
+    
     data = get_quip_data(document_id)
     send_to_chime(data)
 
 if __name__ == '__main__':
     main()
+
