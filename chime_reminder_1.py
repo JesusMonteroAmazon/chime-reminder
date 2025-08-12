@@ -107,44 +107,32 @@ def extract_specialists_from_table(soup):
     
     # Determine which sweep section based on time ranges
     if 5 <= current_hour < 11:
-        section_text = "Morning Sweep"
+        section_start = "Morning Sweep"
+        time_range = (5, 11)  # 5:00 AM to 10:59 AM
     elif 11 <= current_hour < 17:
-        section_text = "Afternoon Sweep"
+        section_start = "Afternoon Sweep"
+        time_range = (11, 17)  # 11:00 AM to 4:59 PM
     else:
-        section_text = "Evening Sweep"
-    
-    print(f"Looking for section containing: {section_text}")
+        section_start = "Evening Sweep"
+        time_range = (17, 5)  # 5:00 PM to 4:59 AM
+
+    print(f"Looking for section containing: {section_start}")
     print(f"Current day: {current_day}")
+    print(f"Current hour: {current_hour}")
+    print(f"Time range: {time_range}")
     
     # Find all tables in the document
     tables = soup.find_all('table')
-    print(f"Found {len(tables)} tables in the document")
-    
-    # Find the table that contains the sweep text
     target_table = None
-    for i, table in enumerate(tables):
-        print(f"\nChecking table {i+1}")
-        # Check table contents
+    
+    for table in tables:
         table_text = table.get_text()
-        print(f"Table text preview: {table_text[:200]}")
-        
-        if section_text in table_text:
-            print(f"Found matching section in table {i+1}")
+        if section_start in table_text:
             target_table = table
             break
     
     if not target_table:
-        # Try looking for partial matches
-        for i, table in enumerate(tables):
-            table_text = table.get_text()
-            if "Sweep" in table_text:
-                print(f"Found table {i+1} containing 'Sweep'")
-                print(f"Table text preview: {table_text[:200]}")
-                target_table = table
-                break
-    
-    if not target_table:
-        print(f"Could not find table for {section_text}")
+        print(f"Could not find table for {section_start}")
         return "No specialists found"
     
     # Map days to column indices (0-based)
@@ -169,23 +157,29 @@ def extract_specialists_from_table(soup):
     rows = target_table.find_all('tr')
     print(f"\nFound {len(rows)} rows in the target table")
     
-    # Print header row for debugging
-    if len(rows) > 0:
-        header_cells = rows[0].find_all('td')
-        if header_cells:
-            header_text = [cell.get_text(strip=True) for cell in header_cells]
-            print(f"Header row: {header_text}")
-    
-    for i, row in enumerate(rows[1:], start=1):  # Skip header row
+    for row in rows[1:]:  # Skip header row
         cells = row.find_all('td')
         if len(cells) > day_index:
             cell_content = cells[day_index].get_text(strip=True)
-            if cell_content:
-                specialists.append(cell_content)
-                print(f"Row {i}: Found specialist: {cell_content}")
+            if cell_content and cell_content not in ['​', current_day]:
+                # Extract time from the specialist entry
+                time_match = re.search(r'\((\d+)(?::\d+)?([ap]m)-.*?\)', cell_content)
+                if time_match:
+                    hour = int(time_match.group(1))
+                    if time_match.group(2) == 'pm' and hour != 12:
+                        hour += 12
+                    if time_match.group(2) == 'am' and hour == 12:
+                        hour = 0
+                    
+                    # Check if the specialist's time falls within the current sweep
+                    if time_range[0] <= hour < time_range[1] or \
+                       (time_range[0] > time_range[1] and  # Handle evening sweep crossing midnight
+                        (hour >= time_range[0] or hour < time_range[1])):
+                        specialists.append(cell_content)
+                        print(f"Added specialist: {cell_content} (hour: {hour})")
     
     if not specialists:
-        print(f"No specialists found for {current_day} in {section_text}")
+        print(f"No specialists found for {current_day} in {section_start}")
         return "No specialists found"
     
     print(f"Found specialists: {specialists}")
