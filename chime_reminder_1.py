@@ -90,77 +90,146 @@ def extract_specialists_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
     current_day = current_time.strftime('%A')
+    current_hour = current_time.hour
     
-    if current_time.hour < 12:
-        table_title = "Morning Sweep (Until 12 noon)"
-    elif current_time.hour < 17:
-        table_title = "Afternoon Sweep (Until 5:00 pm)"
-    else:
-        table_title = "Evening Sweep (From 5:00 pm until calling hours)"
+    # Determine which sweep section based on time ranges
+    if 5 <= current_hour < 11:
+        section_start = "Morning Sweep"
+    elif 11 <= current_hour < 17:
+        section_start = "Afternoon Sweep"
+    elif current_hour >= 17 or current_hour < 5:  # Evening includes night hours
+        section_start = "Evening Sweep"
     
-    table = soup.find('table', string=re.compile(table_title))
-    if not table:
+    print(f"Looking for section starting with: {section_start}")
+    print(f"Current day: {current_day}")
+    
+    # Find all tables in the document
+    tables = soup.find_all('table')
+    target_table = None
+    
+    # Find the correct table by looking for the section header
+    for table in tables:
+        # Look for the section header in previous siblings
+        prev_element = table.find_previous(string=re.compile(section_start, re.IGNORECASE))
+        if prev_element:
+            target_table = table
+            break
+    
+    if not target_table:
+        print(f"Could not find table for {section_start}")
         return "No specialists found"
     
-    day_index = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].index(current_day)
+    # Map days to column indices (0-based)
+    day_columns = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
+    }
+    
+    day_index = day_columns.get(current_day)
+    if day_index is None:
+        print(f"Invalid day: {current_day}")
+        return "No specialists found"
+    
     specialists = []
     
-    for row in table.find_all('tr')[1:]:  # Skip header row
+    # Process rows in the table
+    rows = target_table.find_all('tr')
+    for row in rows[1:]:  # Skip header row
         cells = row.find_all('td')
         if len(cells) > day_index:
-            specialist = cells[day_index].get_text(strip=True)
-            if specialist:
-                specialists.append(specialist)
+            cell_content = cells[day_index].get_text(strip=True)
+            if cell_content:
+                specialists.append(cell_content)
     
+    if not specialists:
+        print(f"No specialists found for {current_day} in {section_start}")
+        return "No specialists found"
+    
+    print(f"Found specialists: {specialists}")
     return ', '.join(specialists)
 
 def extract_distribution_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
-    current_day = current_time.strftime('%A')
+    current_hour = current_time.hour
     
-    if current_time.hour < 12:
-        table_title = "Morning Sweep (Until 12 noon)"
-    elif current_time.hour < 17:
-        table_title = "Afternoon Sweep (Until 5:00 pm)"
-    else:
-        table_title = "Evening Sweep (From 5:00 pm until calling hours)"
+    # Determine which sweep section based on time ranges
+    if 5 <= current_hour < 11:
+        section_start = "Morning Sweep"
+    elif 11 <= current_hour < 17:
+        section_start = "Afternoon Sweep"
+    elif current_hour >= 17 or current_hour < 5:  # Evening includes night hours
+        section_start = "Evening Sweep"
     
-    table = soup.find('table', string=re.compile(table_title))
-    if not table:
+    # Find all tables in the document
+    tables = soup.find_all('table')
+    target_table = None
+    
+    # Find the correct table by looking for the section header
+    for table in tables:
+        prev_element = table.find_previous(string=re.compile(section_start, re.IGNORECASE))
+        if prev_element:
+            target_table = table
+            break
+    
+    if not target_table:
         return {}
     
-    day_index = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].index(current_day)
-    distribution = {}
+    distribution = {'Captain': 0, 'Regular': 0}
+    current_day = current_time.strftime('%A')
     
-    for row in table.find_all('tr')[1:]:  # Skip header row
+    # Map days to column indices
+    day_columns = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
+    }
+    
+    day_index = day_columns.get(current_day)
+    if day_index is None:
+        return distribution
+    
+    # Process rows in the table
+    rows = target_table.find_all('tr')
+    for row in rows[1:]:  # Skip header row
         cells = row.find_all('td')
         if len(cells) > day_index:
-            specialist = cells[day_index].get_text(strip=True)
-            if specialist:
-                if '(CAPTAIN)' in specialist.upper():
-                    distribution['Captain'] = distribution.get('Captain', 0) + 1
+            cell_content = cells[day_index].get_text(strip=True)
+            if cell_content:
+                if '(CAPTAIN)' in cell_content.upper():
+                    distribution['Captain'] += 1
                 else:
-                    distribution['Regular'] = distribution.get('Regular', 0) + 1
+                    distribution['Regular'] += 1
     
+    print(f"Distribution count: {distribution}")
     return distribution
 
 def format_message(data):
     message = "🔔 **Follow Up Reminders**\n\n"
     
-    message += "📋 **Tasks On-Call**\n"
+    message += "• Tasks on-call\n\n"
     if data['tasks_on_call']['specialists']:
-        message += f"👥 *On-call Specialists:* {data['tasks_on_call']['specialists']}\n"
+        message += f"• On-call Specialists:\n{data['tasks_on_call']['specialists']}\n\n"
     if data['tasks_on_call']['pending']:
-        message += f"📝 *Tasks pending:* {data['tasks_on_call']['pending']}\n"
+        message += f"• Tasks pending: {data['tasks_on_call']['pending']}\n\n"
     if data['tasks_on_call']['distribution']:
-        message += "📊 *Distribution:*\n"
+        message += "• Distribution:\n"
         for role, count in data['tasks_on_call']['distribution'].items():
-            message += f"  • {role}: {count}\n"
+            message += f"  {role}: {count}\n"
+        message += "\n"
     if data['tasks_on_call']['priority']:
-        message += f"⚡ *Priority:* {data['tasks_on_call']['priority']}\n"
+        message += f"• Priority: {data['tasks_on_call']['priority']}\n\n"
     
-    message += "\n• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRH\n"
+    message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRH\n"
     message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/7zjRotob/TaskeeDashboard)\n"
 
     message += "\n-------------------\n"
