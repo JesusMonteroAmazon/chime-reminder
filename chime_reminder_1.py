@@ -21,39 +21,32 @@ def save_last_run_time(dt):
         f.write(dt.isoformat())
 
 def is_correct_time():
-    # Get current time in Pacific timezone
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
     
-    # Define the times to send the reminders (10:00 AM and 2:00 PM Pacific)
     send_times = [
-        (10, 0),  # 10:00 AM hour range
-        (14, 0)   # 2:00 PM hour range
+        (5, 0),   # 5:00 AM for Morning Sweep
+        (11, 0),  # 11:00 AM for Afternoon Sweep
+        (17, 0)   # 5:00 PM for Evening Sweep
     ]
-    
-    current_hour = current_time.hour
     
     print(f"Current Pacific time: {current_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     
-    # Get last run time
     last_run = get_last_run_time()
     
-    # Check if current hour matches any of the send times
-    for send_hour, _ in send_times:
-        if current_hour == send_hour:
-            # If we have a last run time, check if it was in the same hour of the same day
+    for send_hour, send_minute in send_times:
+        if current_time.hour == send_hour and current_time.minute == send_minute:
             if last_run is not None:
                 last_run = last_run.astimezone(pacific_tz)
                 if (last_run.date() == current_time.date() and 
-                    last_run.hour == current_hour):
-                    print(f"Message already sent for {current_hour}:00. Skipping.")
+                    last_run.hour == send_hour and
+                    last_run.minute == send_minute):
+                    print(f"Message already sent for {send_hour}:{send_minute:02d}. Skipping.")
                     return False
             
-            # If we get here, we should send the message
             save_last_run_time(current_time)
             return True
     
-    # Also return True if FORCE_SEND is true
     if os.environ.get('FORCE_SEND', 'false').lower() == 'true':
         save_last_run_time(current_time)
         return True
@@ -73,27 +66,18 @@ def extract_content(html_content):
         'title': 'Follow Up reminders',
         'tasks_on_call': {
             'specialists': '',
-            'pending': '',
-            'distribution': '',
-            'priority': ''
+            'pending': '5',
+            'distribution': {},
+            'priority': 'By Timezone EST'
         }
     }
 
     try:
-        # Find all list items
-        items = soup.find_all('li')
-        for item in items:
-            text = item.get_text(strip=True)
-            print(f"Processing item: {text}")
-            
-            if 'Specialists on-call:' in text:
-                data['tasks_on_call']['specialists'] = text.split(':', 1)[1].strip()
-            elif 'Tasks pending:' in text:
-                data['tasks_on_call']['pending'] = text.split(':', 1)[1].strip()
-            elif 'Distribution:' in text:
-                data['tasks_on_call']['distribution'] = text.split(':', 1)[1].strip()
-            elif 'Priority:' in text:
-                data['tasks_on_call']['priority'] = text.split(':', 1)[1].strip()
+        # Extract on-call specialists from the schedule table
+        data['tasks_on_call']['specialists'] = extract_specialists_from_table(soup)
+        
+        # Extract distribution from the schedule table
+        data['tasks_on_call']['distribution'] = extract_distribution_from_table(soup)
 
     except Exception as e:
         print(f"Error during extraction: {str(e)}")
@@ -102,18 +86,82 @@ def extract_content(html_content):
 
     return data
 
+def extract_specialists_from_table(soup):
+    pacific_tz = pytz.timezone('America/Los_Angeles')
+    current_time = datetime.now(pacific_tz)
+    current_day = current_time.strftime('%A')
+    
+    if current_time.hour < 12:
+        table_title = "Morning Sweep (Until 12 noon)"
+    elif current_time.hour < 17:
+        table_title = "Afternoon Sweep (Until 5:00 pm)"
+    else:
+        table_title = "Evening Sweep (From 5:00 pm until calling hours)"
+    
+    table = soup.find('table', string=re.compile(table_title))
+    if not table:
+        return "No specialists found"
+    
+    day_index = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].index(current_day)
+    specialists = []
+    
+    for row in table.find_all('tr')[1:]:  # Skip header row
+        cells = row.find_all('td')
+        if len(cells) > day_index:
+            specialist = cells[day_index].get_text(strip=True)
+            if specialist:
+                specialists.append(specialist)
+    
+    return ', '.join(specialists)
+
+def extract_distribution_from_table(soup):
+    pacific_tz = pytz.timezone('America/Los_Angeles')
+    current_time = datetime.now(pacific_tz)
+    current_day = current_time.strftime('%A')
+    
+    if current_time.hour < 12:
+        table_title = "Morning Sweep (Until 12 noon)"
+    elif current_time.hour < 17:
+        table_title = "Afternoon Sweep (Until 5:00 pm)"
+    else:
+        table_title = "Evening Sweep (From 5:00 pm until calling hours)"
+    
+    table = soup.find('table', string=re.compile(table_title))
+    if not table:
+        return {}
+    
+    day_index = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].index(current_day)
+    distribution = {}
+    
+    for row in table.find_all('tr')[1:]:  # Skip header row
+        cells = row.find_all('td')
+        if len(cells) > day_index:
+            specialist = cells[day_index].get_text(strip=True)
+            if specialist:
+                if '(CAPTAIN)' in specialist.upper():
+                    distribution['Captain'] = distribution.get('Captain', 0) + 1
+                else:
+                    distribution['Regular'] = distribution.get('Regular', 0) + 1
+    
+    return distribution
+
 def format_message(data):
     message = "🔔 **Follow Up Reminders**\n\n"
     
     message += "📋 **Tasks On-Call**\n"
     if data['tasks_on_call']['specialists']:
-        message += f"👥 *Specialists on-call:* {data['tasks_on_call']['specialists']}\n"
+        message += f"👥 *On-call Specialists:* {data['tasks_on_call']['specialists']}\n"
     if data['tasks_on_call']['pending']:
         message += f"📝 *Tasks pending:* {data['tasks_on_call']['pending']}\n"
     if data['tasks_on_call']['distribution']:
-        message += f"📊 *Distribution:* {data['tasks_on_call']['distribution']}\n"
+        message += "📊 *Distribution:*\n"
+        for role, count in data['tasks_on_call']['distribution'].items():
+            message += f"  • {role}: {count}\n"
     if data['tasks_on_call']['priority']:
         message += f"⚡ *Priority:* {data['tasks_on_call']['priority']}\n"
+    
+    message += "\n• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRH\n"
+    message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/7zjRotob/TaskeeDashboard)\n"
 
     message += "\n-------------------\n"
     message += "Have a great day! 🌟"
