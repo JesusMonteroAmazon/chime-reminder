@@ -60,6 +60,11 @@ def get_current_day():
 
 def extract_content(html_content):
     print("\n=== Starting content extraction ===")
+    print("HTML Content:")
+    print(html_content[:1000])  # Print first 1000 characters of HTML
+    print("...")
+    print(html_content[-1000:])  # Print last 1000 characters of HTML
+    
     soup = BeautifulSoup(html_content, 'html.parser')
     
     data = {
@@ -105,15 +110,21 @@ def extract_specialists_from_table(soup):
     
     # Find all tables in the document
     tables = soup.find_all('table')
+    print(f"Found {len(tables)} tables in the document")
+    
     target_table = None
     
     # Find the correct table by looking for the section header
-    for table in tables:
+    for i, table in enumerate(tables):
+        print(f"Checking table {i+1}")
         # Look for the section header in previous siblings
         prev_element = table.find_previous(string=re.compile(section_start, re.IGNORECASE))
         if prev_element:
+            print(f"Found matching section header: {prev_element.strip()}")
             target_table = table
             break
+        else:
+            print(f"No matching section header found for table {i+1}")
     
     if not target_table:
         print(f"Could not find table for {section_start}")
@@ -133,18 +144,20 @@ def extract_specialists_from_table(soup):
     day_index = day_columns.get(current_day)
     if day_index is None:
         print(f"Invalid day: {current_day}")
-        return "No specialists found"
+        return "No specpecialists found"
     
     specialists = []
     
     # Process rows in the table
     rows = target_table.find_all('tr')
-    for row in rows[1:]:  # Skip header row
+    print(f"Found {len(rows)} rows in the target table")
+    for i, row in enumerate(rows[1:], start=1):  # Skip header row
         cells = row.find_all('td')
         if len(cells) > day_index:
             cell_content = cells[day_index].get_text(strip=True)
             if cell_content:
                 specialists.append(cell_content)
+                print(f"Row {i}: Found specialist: {cell_content}")
     
     if not specialists:
         print(f"No specialists found for {current_day} in {section_start}")
@@ -152,7 +165,7 @@ def extract_specialists_from_table(soup):
     
     print(f"Found specialists: {specialists}")
     return ', '.join(specialists)
-
+    
 def extract_distribution_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
@@ -209,6 +222,8 @@ def extract_distribution_from_table(soup):
                     distribution['Captain'] += 1
                 else:
                     distribution['Regular'] += 1
+
+    print(f"Found {len(tables)} tables in the document")
     
     print(f"Distribution count: {distribution}")
     return distribution
