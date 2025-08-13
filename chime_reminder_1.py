@@ -121,13 +121,13 @@ def extract_specialists_from_table(soup):
     print(f"Current hour: {current_hour}")
     print(f"Time range: {time_range}")
     
-    # Find all tables in the document
+    # Find the table containing the correct sweep section
     tables = soup.find_all('table')
     target_table = None
     
+    # First, try to find the table by looking for the section header in the table
     for table in tables:
-        table_text = table.get_text()
-        if section_start in table_text:
+        if section_start in table.get_text():
             target_table = table
             break
     
@@ -135,30 +135,50 @@ def extract_specialists_from_table(soup):
         print(f"Could not find table for {section_start}")
         return "No specialists found"
     
-    # Map days to column indices (0-based)
-    day_columns = {
-        'Sunday': 0,
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6
-    }
+    # Find the column index for the current day
+    header_row = target_table.find('tr')
+    if not header_row:
+        print("Could not find header row")
+        return "No specialists found"
     
-    day_index = day_columns.get(current_day)
+    # Get all header cells
+    header_cells = header_row.find_all(['th', 'td'])
+    day_index = None
+    
+    # Print header cells for debugging
+    print("\nHeader cells:")
+    for i, cell in enumerate(header_cells):
+        cell_text = cell.get_text(strip=True)
+        print(f"Cell {i}: '{cell_text}'")
+        if cell_text == current_day:
+            day_index = i
+            print(f"Found {current_day} at index {i}")
+    
     if day_index is None:
-        print(f"Invalid day: {current_day}")
+        print(f"Could not find column for {current_day}")
+        # Try finding the day in subsequent rows (some tables have day names in the first data row)
+        for row in target_table.find_all('tr')[1:3]:  # Check first couple of rows
+            cells = row.find_all(['th', 'td'])
+            for i, cell in enumerate(cells):
+                if current_day in cell.get_text(strip=True):
+                    day_index = i
+                    print(f"Found {current_day} in data row at index {i}")
+                    break
+            if day_index is not None:
+                break
+    
+    if day_index is None:
+        print(f"Could not find column for {current_day}")
         return "No specialists found"
     
     specialists = []
     
     # Process rows in the table
     rows = target_table.find_all('tr')
-    print(f"\nFound {len(rows)} rows in the target table")
+    print(f"\nProcessing {len(rows)} rows")
     
     for row in rows[1:]:  # Skip header row
-        cells = row.find_all('td')
+        cells = row.find_all(['th', 'td'])
         if len(cells) > day_index:
             cell_content = cells[day_index].get_text(strip=True)
             if cell_content and cell_content not in ['​', current_day]:
