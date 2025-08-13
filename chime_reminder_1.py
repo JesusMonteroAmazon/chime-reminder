@@ -252,14 +252,22 @@ def format_message(data):
     
     message += "• Tasks on-call\n\n"
     if data['tasks_on_call']['specialists']:
-        message += f"• On-call Specialists:\n{data['tasks_on_call']['specialists']}\n\n"
+        message += "• On-call Specialists:\n"
+        specialists = data['tasks_on_call']['specialists'].split(', ')
+        for specialist in specialists:
+            if specialist and specialist not in ['​', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+                message += f"  ◦ {specialist}\n"
+        message += "\n"
+    
     if data['tasks_on_call']['pending']:
         message += f"• Tasks pending: {data['tasks_on_call']['pending']}\n\n"
+    
     if data['tasks_on_call']['distribution']:
         message += "• Distribution:\n"
         for role, count in data['tasks_on_call']['distribution'].items():
             message += f"  {role}: {count}\n"
         message += "\n"
+    
     if data['tasks_on_call']['priority']:
         message += f"• Priority: {data['tasks_on_call']['priority']}\n\n"
     
@@ -269,9 +277,8 @@ def format_message(data):
     message += "\n-------------------\n"
     message += "Have a great day! 🌟"
 
-    print(f"\nFormatted message:\n{message}")
     return message.strip()
-
+    
 def send_reminder():
     try:
         # Get current time in Pacific timezone
