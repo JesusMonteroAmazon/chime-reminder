@@ -270,9 +270,9 @@ def extract_distribution_from_table(soup):
 def format_message(data):
     message = "🔔 **Follow Up Reminders**\n\n"
     
-    message += "• Tasks on-call\n\n"
+    message += "📋 **Tasks On-Call**\n"
     if data['tasks_on_call']['specialists']:
-        message += "• On-call Specialists:\n"
+        message += "👥 On-call Specialists:\n"
         specialists = data['tasks_on_call']['specialists'].split(', ')
         for specialist in specialists:
             if specialist and specialist not in ['​', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
@@ -280,22 +280,22 @@ def format_message(data):
         message += "\n"
     
     if data['tasks_on_call']['pending']:
-        message += f"• Tasks pending: {data['tasks_on_call']['pending']}\n\n"
+        message += f"📝 Tasks pending: {data['tasks_on_call']['pending']}\n\n"
     
     if data['tasks_on_call']['distribution']:
-        message += "• Distribution:\n"
+        message += "📊 Distribution:\n"
         for role, count in data['tasks_on_call']['distribution'].items():
             message += f"  {role}: {count}\n"
         message += "\n"
     
     if data['tasks_on_call']['priority']:
-        message += f"• Priority: {data['tasks_on_call']['priority']}\n\n"
+        message += f"⚡ Priority: {data['tasks_on_call']['priority']}\n\n"
     
     message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRH\n"
     message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/7zjRotob/TaskeeDashboard)\n"
 
     message += "\n-------------------\n"
-    message += "Have a great day! 🌟"
+    message += "Have a great shift! 🌟"
 
     return message.strip()
     
