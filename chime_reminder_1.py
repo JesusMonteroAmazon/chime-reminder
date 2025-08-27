@@ -105,7 +105,7 @@ def extract_content(html_content):
 def extract_specialists_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
-    current_day = currentent_time.strftime('%A')
+    current_day = current_time.strftime('%A')
     current_hour = current_time.hour
     
     # Determine which sweep section based on time ranges
@@ -116,7 +116,7 @@ def extract_specialists_from_table(soup):
         section_start = "Afternoon Sweep"
         time_range = (11, 17)  # 11:00 AM to 4:59 PM
     else:
-        section_start =  = "Evening Sweep"
+        section_start = "Evening Sweep"
         time_range = (17, 5)  # 5:00 PM to 4:59 AM
 
     print(f"Looking for section containing: {section_start}")
@@ -165,7 +165,7 @@ def extract_specialists_from_table(soup):
     if day_index is None:
         print(f"Could not find column for {current_day}")
         # Try finding the day in the second row
-        second_row = target_table.find_all('tr')[1] if len(target_table.find_all('tr')) > 1 else None
+        second_row = target_table.find_all('tr')[1] if len(tartarget_table.find_all('tr')) > 1 else None
         if second_row:
             cells = second_row.find_all(['th', 'td'])
             for i, cell in enumerate(cells):
