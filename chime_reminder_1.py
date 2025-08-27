@@ -165,7 +165,7 @@ def extract_specialists_from_table(soup):
     if day_index is None:
         print(f"Could not find column for {current_day}")
         # Try finding the day in the second row
-        second_row = target_table.find_all('tr')[1] if len(tartarget_table.find_all('tr')) > 1 else None
+        second_row = target_table.find_all('tr')[1] if len(target_table.find_all('tr')) > 1 else None
         if second_row:
             cells = second_row.find_all(['th', 'td'])
             for i, cell in enumerate(cells):
@@ -185,7 +185,7 @@ def extract_specialists_from_table(soup):
     rows = target_table.find_all('tr')
     print(f"\nProcessing {len(rows)} rows")
     
-    for row_index, row in enumerate(rows[1:], 1):  # Skip header row
+    for row_index, row in enumerate(rows[2:], 2):  # Skip header and day rows
         cells = row.find_all(['th', 'td'])
         if len(cells) > day_index:
             cell = cells[day_index]
@@ -225,7 +225,26 @@ def extract_specialists_from_table(soup):
                                 specialists.append(content)
                                 print(f"Added specialist: {content}")
             else:
-                print("No bullet points found in cell")
+                # If no bullet points, check the cell content directly
+                time_match = re.search(r'(\d+)(?::\d+)?\s*([ap]m)', cell_text)
+                if time_match:
+                    start_hour = int(time_match.group(1))
+                    start_meridiem = time_match.group(2).lower()
+                    
+                    # Convert to 24-hour format
+                    if start_meridiem == 'pm' and start_hour != 12:
+                        start_hour += 12
+                    elif start_meridiem == 'am' and start_hour == 12:
+                        start_hour = 0
+                    
+                    print(f"Extracted time: {start_hour}:00 ({start_meridiem})")
+                    
+                    # Check if the specialist's time falls within the current sweep
+                    if time_range[0] <= start_hour < time_range[1]:
+                        specialists.append(cell_text)
+                        print(f"Added specialist: {cell_text}")
+                else:
+                    print("No time information found in cell")
     
     # Add captain at the beginning if found
     if captain:
