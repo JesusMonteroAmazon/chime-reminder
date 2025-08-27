@@ -35,13 +35,16 @@ def is_correct_time():
     last_run = get_last_run_time()
     
     for send_hour, send_minute in send_times:
-        if current_time.hour == send_hour and current_time.minute == send_minute:
+        target_time = current_time.replace(hour=send_hour, minute=send_minute, second=0, microsecond=0)
+        time_diff = (current_time - target_time).total_seconds() / 60  # Difference in minutes
+        
+        if 0 <= time_diff < 30:  # Within 30 minutes after the target time
             if last_run is not None:
                 last_run = last_run.astimezone(pacific_tz)
                 if (last_run.date() == current_time.date() and 
                     last_run.hour == send_hour and
-                    last_run.minute == send_minute):
-                    print(f"Message already sent for {send_hour}:{send_minute:02d}. Skipping.")
+                    0 <= (current_time - last_run).total_seconds() / 60 < 30):
+                    print(f"Message already sent for {send_hour}:00. Skipping.")
                     return False
             
             save_last_run_time(current_time)
@@ -51,7 +54,7 @@ def is_correct_time():
         save_last_run_time(current_time)
         return True
     
-    print(f"Current time {current_time.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
+    print(f"Current time {current_time.strftime('%H:%M')} is not within a scheduled reminder window. Skipping.")
     return False
 
 def get_current_day():
