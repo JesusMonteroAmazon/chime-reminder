@@ -294,7 +294,7 @@ def format_message(data):
     if data['tasks_on_call']['priority']:
         message += f"⚡ Priority: {data['tasks_on_call']['priority']}\n\n"
     
-    message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRH\n"
+    message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRI\n"
     message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/7zjRotob/TaskeeDashboard)\n"
 
     message += "\n-------------------\n"
