@@ -125,29 +125,34 @@ def extract_specialists_from_table(soup):
     
     # Find the table containing the sweep section
     for table in tables:
-        if section_start in table.get_text():
+        if "Morning Sweep (Until 12 noon)" in table.get_text():
             target_table = table
             break
-    
+            
     if not target_table:
+        print("Could not find morning sweep table")
         return "No specialists found"
 
     # Get all rows
     rows = target_table.find_all('tr')
-    if len(rows) < 3:  # Need at least header, days row, and one data row
+    if len(rows) < 3:
         return "No specialists found"
     
-    # Find the day column index from the days row (second row)
+    # Find the day column index from the second row (days row)
     days_row = rows[1]
     day_cells = days_row.find_all(['th', 'td'])
     day_index = None
     
     for i, cell in enumerate(day_cells):
-        if current_day in cell.get_text(strip=True):
+        cell_text = cell.get_text(strip=True)
+        print(f"Checking cell {i}: '{cell_text}'")
+        if current_day in cell_text:
             day_index = i
+            print(f"Found {current_day} at index {i}")
             break
     
     if day_index is None:
+        print("Could not find day column")
         return "No specialists found"
 
     specialists = []
@@ -157,31 +162,34 @@ def extract_specialists_from_table(soup):
         cells = row.find_all(['th', 'td'])
         if len(cells) > day_index:
             cell = cells[day_index]
-            cell_text = cell.get_text(strip=True)
             
-            # Skip empty cells
-            if not cell_text:
+            # Check for captain first
+            captain_text = cell.get_text(strip=True)
+            if '[CAPTAIN]' in captain_text.upper():
+                specialists.insert(0, captain_text)
                 continue
                 
-            # Check for captain
-            if '[CAPTAIN]' in cell_text.upper():
-                specialists.insert(0, cell_text)  # Add captain at the beginning
-                continue
-            
-            # Look for bullet points
+            # Look for specialists in bullet points
             bullet_points = cell.find_all('li')
             if bullet_points:
                 for bullet in bullet_points:
-                    content = bullet.get_text(strip=True)
-                    if content:
-                        specialists.append(content)
+                    specialist = bullet.get_text(strip=True)
+                    if specialist and ' — ' in specialist:
+                        # Extract time from specialist entry
+                        name, time_range = specialist.split(' — ')
+                        if '5am' in time_range.lower() or '6am' in time_range.lower():
+                            specialists.append(specialist)
             else:
-                # If no bullet points but cell has content
-                specialists.append(cell_text)
+                # Check for non-bulleted specialists
+                cell_text = cell.get_text(strip=True)
+                if cell_text and ' — ' in cell_text and ('5am' in cell_text.lower() or '6am' in cell_text.lower()):
+                    specialists.append(cell_text)
 
     if not specialists:
+        print("No specialists found for the current sweep")
         return "No specialists found"
         
+    print(f"Found specialists: {specialists}")
     return specialists
 
 def extract_distribution_from_table(soup):
@@ -248,8 +256,8 @@ def extract_distribution_from_table(soup):
 
 def format_message(data):
     message = "🔔 **Follow Up Reminders**\n\n"
-    
     message += "• Tasks on-call\n\n"
+    
     if data['tasks_on_call']['specialists']:
         message += "• On-call Specialists:\n"
         if isinstance(data['tasks_on_call']['specialists'], list):
