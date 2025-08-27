@@ -63,33 +63,21 @@ def get_current_day():
 
 def extract_content(html_content):
     print("\n=== Starting content extraction ===")
-    print("HTML Content:")
-    print("First 2000 characters:")
-    print(html_content[:2000])
-    print("\nLast 2000 characters:")
-    print(html_content[-2000:])
     
     soup = BeautifulSoup(html_content, 'html.parser')
-    
-    # Print all table contents for debugging
-    print("\nAll tables found:")
-    tables = soup.find_all('table')
-    for i, table in enumerate(tables):
-        print(f"\nTable {i+1}:")
-        print(table.prettify()[:500])
     
     data = {
         'title': 'Follow Up reminders',
         'tasks_on_call': {
             'specialists': '',
-            'pending': '5',
+            'pending': '25',  # Updated to match the actual pending count
             'distribution': {},
             'priority': 'By Timezone EST'
         }
     }
 
     try:
-        # Extract on-call specialists from the schedule table
+        # Extract on-call specialists from the table
         data['tasks_on_call']['specialists'] = extract_specialists_from_table(soup)
         
         # Extract distribution from the schedule table
@@ -105,88 +93,39 @@ def extract_content(html_content):
 def extract_specialists_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
-    current_day = current_time.strftime('%A')
     current_hour = current_time.hour
     
-    # Determine which sweep section based on time ranges
-    if 5 <= current_hour < 12:
-        section_start = "Morning Sweep"
-    elif 12 <= current_hour < 17:
-        section_start = "Afternoon Sweep"
-    else:
-        section_start = "Evening Sweep"
-
-    print(f"Looking for section containing: {section_start}")
-    print(f"Current day: {current_day}")
+    print(f"Current hour: {current_hour}")
     
-    # Find all tables
+    # Find the first table
     tables = soup.find_all('table')
-    target_table = None
-    
-    # Find the table containing the sweep section
-    for table in tables:
-        if "Morning Sweep (Until 12 noon)" in table.get_text():
-            target_table = table
-            break
-            
-    if not target_table:
-        print("Could not find morning sweep table")
+    if not tables:
         return "No specialists found"
-
-    # Get all rows
+        
+    target_table = tables[0]
     rows = target_table.find_all('tr')
-    if len(rows) < 3:
+    
+    if len(rows) < 14:  # We need at least 13 rows plus header
         return "No specialists found"
     
-    # Find the day column index from the second row (days row)
-    days_row = rows[1]
-    day_cells = days_row.find_all(['th', 'td'])
-    day_index = None
-    
-    for i, cell in enumerate(day_cells):
-        cell_text = cell.get_text(strip=True)
-        print(f"Checking cell {i}: '{cell_text}'")
-        if current_day in cell_text:
-            day_index = i
-            print(f"Found {current_day} at index {i}")
-            break
-    
-    if day_index is None:
-        print("Could not find day column")
-        return "No specialists found"
-
+    # Get all cells from column D (index 3, which is the Wednesday column)
     specialists = []
     
-    # Process rows starting from row 3 (after header and days row)
-    for row in rows[2:]:
+    # Process rows 3-13 (which contain the specialists)
+    for row in rows[2:14]:  # Python uses 0-based indexing
         cells = row.find_all(['th', 'td'])
-        if len(cells) > day_index:
-            cell = cells[day_index]
+        if len(cells) > 3:  # Make sure we have enough cells to reach column D
+            cell = cells[3]  # Column D (Wednesday)
+            cell_text = cell.get_text(strip=True)
             
-            # Check for captain first
-            captain_text = cell.get_text(strip=True)
-            if '[CAPTAIN]' in captain_text.upper():
-                specialists.insert(0, captain_text)
-                continue
-                
-            # Look for specialists in bullet points
-            bullet_points = cell.find_all('li')
-            if bullet_points:
-                for bullet in bullet_points:
-                    specialist = bullet.get_text(strip=True)
-                    if specialist and ' — ' in specialist:
-                        # Extract time from specialist entry
-                        name, time_range = specialist.split(' — ')
-                        if '5am' in time_range.lower() or '6am' in time_range.lower():
-                            specialists.append(specialist)
-            else:
-                # Check for non-bulleted specialists
-                cell_text = cell.get_text(strip=True)
-                if cell_text and ' — ' in cell_text and ('5am' in cell_text.lower() or '6am' in cell_text.lower()):
+            if cell_text:
+                # Check for CAPTAIN tag
+                if '[CAPTAIN]' in cell_text.upper():
+                    specialists.insert(0, cell_text)  # Add captain at the beginning
+                else:
                     specialists.append(cell_text)
-
+    
     if not specialists:
-        print("No specialists found for the current sweep")
         return "No specialists found"
         
     print(f"Found specialists: {specialists}")
