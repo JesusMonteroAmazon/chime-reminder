@@ -94,8 +94,45 @@ def extract_specialists_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
     current_hour = current_time.hour
+    current_day = current_time.strftime('%A')
     
+    # Map days to column indices
+    day_columns = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
+    }
+    
+    # Map time periods to row ranges
+    sweep_ranges = {
+        'morning': (3, 13),    # Morning Sweep rows
+        'afternoon': (16, 26), # Afternoon Sweep rows
+        'evening': (29, 34)    # Evening Sweep rows
+    }
+    
+    # Determine which sweep period based on current hour
+    if 5 <= current_hour < 12:
+        sweep_period = 'morning'
+    elif 12 <= current_hour < 17:
+        sweep_period = 'afternoon'
+    else:
+        sweep_period = 'evening'
+        
     print(f"Current hour: {current_hour}")
+    print(f"Current day: {current_day}")
+    print(f"Sweep period: {sweep_period}")
+    
+    # Get the column index for the current day
+    day_index = day_columns.get(current_day)
+    if day_index is None:
+        print(f"Invalid day: {current_day}")
+        return "No specialists found"
+        
+    print(f"Using column index {day_index} for {current_day}")
     
     # Find the first table
     tables = soup.find_all('table')
@@ -105,49 +142,27 @@ def extract_specialists_from_table(soup):
     target_table = tables[0]
     rows = target_table.find_all('tr')
     
-    if len(rows) < 14:
-        return "No specialists found"
-
-    # The days are in row index 2 (third row)
-    days_row = rows[2]  # Changed from rows[1] to rows[2]
-    day_cells = days_row.find_all(['th', 'td'])
-    wednesday_index = None
-    
-    print("Scanning for Wednesday column:")
-    for idx, cell in enumerate(day_cells):
-        cell_text = cell.get_text(strip=True)
-        print(f"Column {idx}: '{cell_text}'")
-        if 'Wednesday' in cell_text:
-            wednesday_index = idx
-            print(f"Found Wednesday at index {idx}")
-            break
-    
-    if wednesday_index is None:
-        # Try checking row 1 for column headers
-        header_row = rows[1]
-        header_cells = header_row.find_all(['th', 'td'])
-        for idx, cell in enumerate(header_cells):
-            cell_text = cell.get_text(strip=True)
-            print(f"Header Column {idx}: '{cell_text}'")
-            if 'Wednesday' in cell_text:
-                wednesday_index = idx
-                print(f"Found Wednesday in header at index {idx}")
-                break
-    
-    if wednesday_index is None:
-        print("Could not find Wednesday column")
+    if len(rows) < sweep_ranges[sweep_period][1]:
+        print(f"Table doesn't have enough rows for {sweep_period} sweep")
         return "No specialists found"
     
     specialists = []
     
-    # Process rows starting from row 4 (which contain the specialists)
-    print(f"\nProcessing specialists from column index {wednesday_index}:")
-    for row in rows[3:14]:  # Changed from rows[2:14] to rows[3:14]
-        cells = row.find_all(['th', 'td'])
-        if len(cells) > wednesday_index:
-            cell = cells[wednesday_index]
+    # Get row range for current sweep period
+    start_row, end_row = sweep_ranges[sweep_period]
+ ]
+    print(f"\nProcessing rows {start_row} to {end_row} for {sweep_period} sweep:")
+    
+    # Process rows for the current sweep period
+    for row_idx in range(start_row, end_row + 1):
+        if row_idx >= len(rows):
+            break
+            
+        cells = rows[row_idx].find_all(['th', 'td'])
+        if len(cells) > day_index:
+            cell = cells[day_index]
             cell_text = cell.get_text(strip=True)
-            print(f"Row content: '{cell_text}'")
+            print(f"Row {row_idx} content: '{cell_text}'")
             
             if cell_text and cell_text != '​':  # Skip empty cells
                 # Check for CAPTAIN tag
