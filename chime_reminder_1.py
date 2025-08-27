@@ -109,152 +109,79 @@ def extract_specialists_from_table(soup):
     current_hour = current_time.hour
     
     # Determine which sweep section based on time ranges
-    if 5 <= current_hour < 11:
+    if 5 <= current_hour < 12:
         section_start = "Morning Sweep"
-        time_range = (5, 15)  # 5:00 AM to 3:00 PM
-    elif 11 <= current_hour < 17:
+    elif 12 <= current_hour < 17:
         section_start = "Afternoon Sweep"
-        time_range = (11, 17)  # 11:00 AM to 4:59 PM
     else:
         section_start = "Evening Sweep"
-        time_range = (17, 5)  # 5:00 PM to 4:59 AM
 
     print(f"Looking for section containing: {section_start}")
     print(f"Current day: {current_day}")
-    print(f"Current hour: {current_hour}")
-    print(f"Time range: {time_range}")
     
-    # Find the table containing the correct sweep section
+    # Find all tables
     tables = soup.find_all('table')
-    print(f"Found {len(tables)} tables")
     target_table = None
     
-    for i, table in enumerate(tables):
-        table_text = table.get_text()
-        print(f"\nChecking table {i+1} content preview:")
-        print(table_text[:200])  # Print first 200 characters of table content
-        if "Morning Sweep (Until 12 noon)" in table_text:
-            print(f"Found Morning Sweep table at index {i}")
+    # Find the table containing the sweep section
+    for table in tables:
+        if section_start in table.get_text():
             target_table = table
             break
     
     if not target_table:
-        print(f"Could not find table for {section_start}")
         return "No specialists found"
 
-    # Find the column index for the current day
-    header_row = target_table.find('tr')
-    if not header_row:
-        print("Could not find header row")
+    # Get all rows
+    rows = target_table.find_all('tr')
+    if len(rows) < 3:  # Need at least header, days row, and one data row
         return "No specialists found"
     
-    # Print header row content
-    print("\nHeader row content:")
-    header_cells = header_row.find_all(['th', 'td'])
-    for i, cell in enumerate(header_cells):
-        print(f"Column {i}: {cell.get_text(strip=True)}")
-    
+    # Find the day column index from the days row (second row)
+    days_row = rows[1]
+    day_cells = days_row.find_all(['th', 'td'])
     day_index = None
-    for i, cell in enumerate(header_cells):
-        cell_text = cell.get_text(strip=True)
-        if current_day in cell_text:
+    
+    for i, cell in enumerate(day_cells):
+        if current_day in cell.get_text(strip=True):
             day_index = i
-            print(f"Found {current_day} at column index {i}")
             break
     
     if day_index is None:
-        print(f"Could not find column for {current_day}")
-        # Try finding the day in the second row
-        second_row = target_table.find_all('tr')[1] if len(target_table.find_all('tr')) > 1 else None
-        if second_row:
-            cells = second_row.find_all(['th', 'td'])
-            for i, cell in enumerate(cells):
-                if current_day in cell.get_text(strip=True):
-                    day_index = i
-                    print(f"Found {current_day} in second row at column index {i}")
-                    break
-    
-    if day_index is None:
-        print(f"Could not find column for {current_day} in header or second row")
         return "No specialists found"
-    
+
     specialists = []
-    captain = None
     
-    # Process rows in the table
-    rows = target_table.find_all('tr')
-    print(f"\nProcessing {len(rows)} rows")
-    
-    for row_index, row in enumerate(rows[2:], 2):  # Skip header and day rows
+    # Process rows starting from row 3 (after header and days row)
+    for row in rows[2:]:
         cells = row.find_all(['th', 'td'])
         if len(cells) > day_index:
             cell = cells[day_index]
             cell_text = cell.get_text(strip=True)
-            print(f"\nProcessing row {row_index}, column {day_index}:")
-            print(f"Cell content: {cell_text}")
             
+            # Skip empty cells
+            if not cell_text:
+                continue
+                
             # Check for captain
-            if '[CAPTAIN]' in cell_text:
-                captain = cell_text
-                print(f"Found captain: {captain}")
+            if '[CAPTAIN]' in cell_text.upper():
+                specialists.insert(0, cell_text)  # Add captain at the beginning
+                continue
             
             # Look for bullet points
             bullet_points = cell.find_all('li')
             if bullet_points:
-                print(f"Found {len(bullet_points)} bullet points")
                 for bullet in bullet_points:
                     content = bullet.get_text(strip=True)
-                    print(f"Bullet point content: {content}")
                     if content:
-                        # Extract time from the specialist entry
-                        time_match = re.search(r'—\s*(\d+)(?::\d+)?\s*([ap]m)', content)
-                        if time_match:
-                            start_hour = int(time_match.group(1))
-                            start_meridiem = time_match.group(2).lower()
-                            
-                            # Convert to 24-hour format
-                            if start_meridiem == 'pm' and start_hour != 12:
-                                start_hour += 12
-                            elif start_meridiem == 'am' and start_hour == 12:
-                                start_hour = 0
-                            
-                            print(f"Extracted time: {start_hour}:00 ({start_meridiem})")
-                            
-                            # Check if the specialist's time falls within the current sweep
-                            if time_range[0] <= start_hour < time_range[1]:
-                                specialists.append(content)
-                                print(f"Added specialist: {content}")
+                        specialists.append(content)
             else:
-                # If no bullet points, check the cell content directly
-                time_match = re.search(r'(\d+)(?::\d+)?\s*([ap]m)', cell_text)
-                if time_match:
-                    start_hour = int(time_match.group(1))
-                    start_meridiem = time_match.group(2).lower()
-                    
-                    # Convert to 24-hour format
-                    if start_meridiem == 'pm' and start_hour != 12:
-                        start_hour += 12
-                    elif start_meridiem == 'am' and start_hour == 12:
-                        start_hour = 0
-                    
-                    print(f"Extracted time: {start_hour}:00 ({start_meridiem})")
-                    
-                    # Check if the specialist's time falls within the current sweep
-                    if time_range[0] <= start_hour < time_range[1]:
-                        specialists.append(cell_text)
-                        print(f"Added specialist: {cell_text}")
-                else:
-                    print("No time information found in cell")
-    
-    # Add captain at the beginning if found
-    if captain:
-        specialists.insert(0, captain)
-    
+                # If no bullet points but cell has content
+                specialists.append(cell_text)
+
     if not specialists:
-        print(f"No specialists found for {current_day} in {section_start}")
         return "No specialists found"
-    
-    print(f"\nFinal list of specialists: {specialists}")
+        
     return specialists
 
 def extract_distribution_from_table(soup):
