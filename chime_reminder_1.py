@@ -150,7 +150,6 @@ def extract_specialists_from_table(soup):
     
     # Get row range for current sweep period
     start_row, end_row = sweep_ranges[sweep_period]
- ]
     print(f"\nProcessing rows {start_row} to {end_row} for {sweep_period} sweep:")
     
     # Process rows for the current sweep period
