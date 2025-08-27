@@ -108,8 +108,8 @@ def extract_specialists_from_table(soup):
     if len(rows) < 14:
         return "No specialists found"
 
-    # First, let's find the correct column index for Wednesday
-    days_row = rows[1]  # Second row contains the days
+    # The days are in row index 2 (third row)
+    days_row = rows[2]  # Changed from rows[1] to rows[2]
     day_cells = days_row.find_all(['th', 'td'])
     wednesday_index = None
     
@@ -123,26 +123,38 @@ def extract_specialists_from_table(soup):
             break
     
     if wednesday_index is None:
+        # Try checking row 1 for column headers
+        header_row = rows[1]
+        header_cells = header_row.find_all(['th', 'td'])
+        for idx, cell in enumerate(header_cells):
+            cell_text = cell.get_text(strip=True)
+            print(f"Header Column {idx}: '{cell_text}'")
+            if 'Wednesday' in cell_text:
+                wednesday_index = idx
+                print(f"Found Wednesday in header at index {idx}")
+                break
+    
+    if wednesday_index is None:
         print("Could not find Wednesday column")
         return "No specialists found"
     
     specialists = []
     
-    # Process rows 3-13 (which contain the specialists)
+    # Process rows starting from row 4 (which contain the specialists)
     print(f"\nProcessing specialists from column index {wednesday_index}:")
-    for row in rows[2:14]:
+    for row in rows[3:14]:  # Changed from rows[2:14] to rows[3:14]
         cells = row.find_all(['th', 'td'])
         if len(cells) > wednesday_index:
             cell = cells[wednesday_index]
             cell_text = cell.get_text(strip=True)
             print(f"Row content: '{cell_text}'")
             
-            if cell_text:
+            if cell_text and cell_text != '​':  # Skip empty cells
                 # Check for CAPTAIN tag
                 if '[CAPTAIN]' in cell_text.upper():
                     specialists.insert(0, cell_text)
                     print(f"Added captain: {cell_text}")
-                elif cell_text != '​':  # Skip empty cells
+                else:
                     specialists.append(cell_text)
                     print(f"Added specialist: {cell_text}")
     
@@ -151,7 +163,7 @@ def extract_specialists_from_table(soup):
         
     print(f"\nFinal list of specialists: {specialists}")
     return specialists
-
+    
 def extract_distribution_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
     current_time = datetime.now(pacific_tz)
