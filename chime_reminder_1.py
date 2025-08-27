@@ -128,7 +128,6 @@ def extract_specialists_from_table(soup):
     tables = soup.find_all('table')
     target_table = None
     
-    # First, try to find the table by looking for the section header in the table
     for table in tables:
         if section_start in table.get_text():
             target_table = table
@@ -137,76 +136,75 @@ def extract_specialists_from_table(soup):
     if not target_table:
         print(f"Could not find table for {section_start}")
         return "No specialists found"
-    
+
     # Find the column index for the current day
     header_row = target_table.find('tr')
     if not header_row:
         print("Could not find header row")
         return "No specialists found"
     
-    # Get all header cells
     header_cells = header_row.find_all(['th', 'td'])
     day_index = None
     
-    # Print header cells for debugging
-    print("\nHeader cells:")
     for i, cell in enumerate(header_cells):
-        cell_text = cell.get_text(strip=True)
-        print(f"Cell {i}: '{cell_text}'")
-        if cell_text == current_day:
+        if current_day in cell.get_text(strip=True):
             day_index = i
-            print(f"Found {current_day} at index {i}")
-    
-    if day_index is None:
-        print(f"Could not find column for {current_day}")
-        # Try finding the day in subsequent rows (some tables have day names in the first data row)
-        for row in target_table.find_all('tr')[1:3]:  # Check first couple of rows
-            cells = row.find_all(['th', 'td'])
-            for i, cell in enumerate(cells):
-                if current_day in cell.get_text(strip=True):
-                    day_index = i
-                    print(f"Found {current_day} in data row at index {i}")
-                    break
-            if day_index is not None:
-                break
+            break
     
     if day_index is None:
         print(f"Could not find column for {current_day}")
         return "No specialists found"
     
     specialists = []
+    captain = None
     
     # Process rows in the table
     rows = target_table.find_all('tr')
     print(f"\nProcessing {len(rows)} rows")
     
     for row in rows[1:]:  # Skip header row
-        cells = row.find_all(['th', 'td'])
+        cells = row.find_all(['th', 't 'td'])
         if len(cells) > day_index:
-            cell_content = cells[day_index].get_text(strip=True)
-            if cell_content and cell_content not in ['​', current_day]:
-                # Extract time from the specialist entry
-                time_match = re.search(r'\((\d+)(?::\d+)?([ap]m)-.*?\)', cell_content)
-                if time_match:
-                    hour = int(time_match.group(1))
-                    if time_match.group(2) == 'pm' and hour != 12:
-                        hour += 12
-                    if time_match.group(2) == 'am' and hour == 12:
-                        hour = 0
-                    
-                    # Check if the specialist's time falls within the current sweep
-                    if time_range[0] <= hour < time_range[1] or \
-                       (time_range[0] > time_range[1] and  # Handle evening sweep crossing midnight
-                        (hour >= time_range[0] or hour < time_range[1])):
-                        specialists.append(cell_content)
-                        print(f"Added specialist: {cell_content} (hour: {hour})")
+            cell = cells[day_index]
+            # First check for the captain (usually in the first row)
+            if '[CAPTAIN]' in cell.get_text():
+                captain = cell.get_text(strip=True)
+            else:
+                # Look for bullet points within the cell
+                bullet_points = cell.find_all('li')
+                if bullet_points:
+                    for bullet in bullet_points:
+                        content = bullet.get_text(strip=True)
+                        if content:
+                            # Extract time from the specialist entry
+                            time_match = re.search(r'—\s*(\d+)(?::\d+)?\s*([ap]m)\s+to\s+(\d+)(?::\d+)?\s*([ap]m)', content)
+                            if time_match:
+                                start_hour = int(time_match.group(1))
+                                start_meridiem = time_match.group(2)
+                                
+                                # Convert to 24-hour format
+                                if start_meridiem == 'pm' and start_hour != 12:
+                                    start_hour += 12
+                                elif start_meridiem == 'am' and start_hour == 12:
+                                    start_hour = 0
+                                
+                                # Check if the specialist's time falls within the current sweep
+                                if time_range[0] <= start_hour < time_range[1] or \
+                                   (time_range[0] > time_range[1] and  # Handle evening sweep crossing midnight
+                                    (start_hour >= time_range[0] or start_hour < time_range[1])):
+                                    specialists.append(content)
+                                    print(f"Added specialist: {content} (hour: {start_hour})")
+    
+    # Add captain at the beginning if found
+    if captain:
+        specialists.insert(0, captain)
     
     if not specialists:
         print(f"No specialists found for {current_day} in {section_start}")
         return "No specialists found"
     
     print(f"Found specialists: {specialists}")
-    return ', '.join(specialists)
+    return specialists  # Return as list to maintain formatting in format_message
 
 def extract_distribution_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
@@ -273,26 +271,25 @@ def extract_distribution_from_table(soup):
 def format_message(data):
     message = "🔔 **Follow Up Reminders**\n\n"
     
-    message += "📋 **Tasks On-Call**\n"
+    message += "• Tasks on-call\n\n"
     if data['tasks_on_call']['specialists']:
-        message += "👥 On-call Specialists:\n"
-        specialists = data['tasks_on_call']['specialists'].split(', ')
-        for specialist in specialists:
-            if specialist and specialist not in ['​', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+        message += "• On-call Specialists:\n"
+        if isinstance(data['tasks_on_call']['specialists'], list):
+            for specialist in data['tasks_on_call']['specialists']:
                 message += f"  ◦ {specialist}\n"
+        else:
+            message += f"  ◦ {data['tasks_on_call']['specialists']}\n"
         message += "\n"
     
-    if data['tasks_on_call']['pending']:
-        message += f"📝 Tasks pending: {data['tasks_on_call']['pending']}\n\n"
+    message += f"• Tasks pending: {data['tasks_on_call']['pending']}\n\n"
     
     if data['tasks_on_call']['distribution']:
-        message += "📊 Distribution:\n"
+        message += "• Distribution:\n"
         for role, count in data['tasks_on_call']['distribution'].items():
             message += f"  {role}: {count}\n"
         message += "\n"
     
-    if data['tasks_on_call']['priority']:
-        message += f"⚡ Priority: {data['tasks_on_call']['priority']}\n\n"
+    message += f"• Priority: {data['tasks_on_call']['priority']}\n\n"
     
     message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRI\n"
     message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/7zjRotob/TaskeeDashboard)\n"
