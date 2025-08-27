@@ -105,30 +105,51 @@ def extract_specialists_from_table(soup):
     target_table = tables[0]
     rows = target_table.find_all('tr')
     
-    if len(rows) < 14:  # We need at least 13 rows plus header
+    if len(rows) < 14:
+        return "No specialists found"
+
+    # First, let's find the correct column index for Wednesday
+    days_row = rows[1]  # Second row contains the days
+    day_cells = days_row.find_all(['th', 'td'])
+    wednesday_index = None
+    
+    print("Scanning for Wednesday column:")
+    for idx, cell in enumerate(day_cells):
+        cell_text = cell.get_text(strip=True)
+        print(f"Column {idx}: '{cell_text}'")
+        if 'Wednesday' in cell_text:
+            wednesday_index = idx
+            print(f"Found Wednesday at index {idx}")
+            break
+    
+    if wednesday_index is None:
+        print("Could not find Wednesday column")
         return "No specialists found"
     
-    # Get all cells from column D (index 3, which is the Wednesday column)
     specialists = []
     
     # Process rows 3-13 (which contain the specialists)
-    for row in rows[2:14]:  # Python uses 0-based indexing
+    print(f"\nProcessing specialists from column index {wednesday_index}:")
+    for row in rows[2:14]:
         cells = row.find_all(['th', 'td'])
-        if len(cells) > 3:  # Make sure we have enough cells to reach column D
-            cell = cells[3]  # Column D (Wednesday)
+        if len(cells) > wednesday_index:
+            cell = cells[wednesday_index]
             cell_text = cell.get_text(strip=True)
+            print(f"Row content: '{cell_text}'")
             
             if cell_text:
                 # Check for CAPTAIN tag
                 if '[CAPTAIN]' in cell_text.upper():
-                    specialists.insert(0, cell_text)  # Add captain at the beginning
-                else:
+                    specialists.insert(0, cell_text)
+                    print(f"Added captain: {cell_text}")
+                elif cell_text != '​':  # Skip empty cells
                     specialists.append(cell_text)
+                    print(f"Added specialist: {cell_text}")
     
     if not specialists:
         return "No specialists found"
         
-    print(f"Found specialists: {specialists}")
+    print(f"\nFinal list of specialists: {specialists}")
     return specialists
 
 def extract_distribution_from_table(soup):
