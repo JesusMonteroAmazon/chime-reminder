@@ -163,7 +163,7 @@ def extract_specialists_from_table(soup):
     print(f"\nProcessing {len(rows)} rows")
     
     for row in rows[1:]:  # Skip header row
-        cells = row.find_all(['th', 't 'td'])
+        cells = row.find_all(['th', 'td'])  # Fixed the syntax error here
         if len(cells) > day_index:
             cell = cells[day_index]
             # First check for the captain (usually in the first row)
@@ -171,7 +171,7 @@ def extract_specialists_from_table(soup):
                 captain = cell.get_text(strip=True)
             else:
                 # Look for bullet points within the cell
-                bullet_points = cell.find_all('li')
+                bullet_points = cell.find_all('li')  # Look for list items
                 if bullet_points:
                     for bullet in bullet_points:
                         content = bullet.get_text(strip=True)
@@ -204,7 +204,7 @@ def extract_specialists_from_table(soup):
         return "No specialists found"
     
     print(f"Found specialists: {specialists}")
-    return specialists  # Return as list to maintain formatting in format_message
+    return specialists
 
 def extract_distribution_from_table(soup):
     pacific_tz = pytz.timezone('America/Los_Angeles')
