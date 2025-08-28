@@ -34,29 +34,29 @@ def is_correct_time():
     
     last_run = get_last_run_time()
     
-    for send_hour, send_minute in send_times:
-        target_time = current_time.replace(hour=send_hour, minute=send_minute, second=0, microsecond=0)
-        time_diff = (current_time - target_time).total_seconds() / 60  # Difference in minutes
-        
-        if 0 <= time_diff < 30:  # Within 30 minutes after the target time
+# Check if current hour matches any of the send times
+    for send_hour, _ in send_times:
+        if current_hour == send_hour:
+            # If we have a last run time, check if it was in the same hour of the same day
             if last_run is not None:
                 last_run = last_run.astimezone(pacific_tz)
                 if (last_run.date() == current_time.date() and 
-                    last_run.hour == send_hour and
-                    0 <= (current_time - last_run).total_seconds() / 60 < 30):
-                    print(f"Message already sent for {send_hour}:00. Skipping.")
+                    last_run.hour == current_hour):
+                    print(f"Message already sent for {current_hour}:00. Skipping.")
                     return False
             
+            # If we get here, we should send the message
             save_last_run_time(current_time)
             return True
     
+    # Also return True if FORCE_SEND is true
     if os.environ.get('FORCE_SEND', 'false').lower() == 'true':
         save_last_run_time(current_time)
         return True
     
-    print(f"Current time {current_time.strftime('%H:%M')} is not within a scheduled reminder window. Skipping.")
+    print(f"Current time {current_time.strftime('%H:%M')} is not a scheduled reminder time. Skipping.")
     return False
-
+    
 def get_current_day():
     pacific_tz = pytz.timezone('America/Los_Angeles')
     return datetime.now(pacific_tz).strftime('%A')
