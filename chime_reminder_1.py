@@ -264,8 +264,8 @@ def format_message(data):
     
     message += f"• Priority: {data['tasks_on_call']['priority']}\n\n"
     
-    message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMRCRI\n"
-    message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/7zjRotob/TaskeeDashboard)\n"
+    message += "• Please follow the Tasks schedule wiki for guidance: https://w.amazon.com/bin/view/LMIRCRI/Roster\n"
+    message += "• Make sure you review the Taskee Dashboard (https://tiny.amazon.com/cuqmzf54/taskamazdevrooma917task)\n"
 
     message += "\n-------------------\n"
     message += "Have a great shift! 🌟"
