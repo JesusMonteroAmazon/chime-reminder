@@ -116,9 +116,9 @@ def extract_specialists_from_table(soup):
     }
     
     # Determine which sweep period based on current hour
-    if 5 <= current_hour < 12:
+    if 5 <= current_hour < 10:
         sweep_period = 'morning'
-    elif 12 <= current_hour < 17:
+    elif 10 <= current_hour < 15:
         sweep_period = 'afternoon'
     else:
         sweep_period = 'evening'
