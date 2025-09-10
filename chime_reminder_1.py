@@ -99,13 +99,13 @@ def extract_specialists_from_table(soup):
     
     # Map days to column indices
     day_columns = {
-        'Sunday': 0,
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6
+        'Sunday': 1,
+        'Monday': 2,
+        'Tuesday': 3,
+        'Wednesday': 4,
+        'Thursday': 5,
+        'Friday': 6,
+        'Saturday': 7
     }
     
     # Map time periods to row ranges
@@ -211,13 +211,13 @@ def extract_distribution_from_table(soup):
     
     # Map days to column indices
     day_columns = {
-        'Sunday': 0,
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6
+        'Sunday': 1,
+        'Monday': 2,
+        'Tuesday': 3,
+        'Wednesday': 4,
+        'Thursday': 5,
+        'Friday': 6,
+        'Saturday': 7
     }
     
     day_index = day_columns.get(current_day)
