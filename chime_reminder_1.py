@@ -185,11 +185,11 @@ def extract_distribution_from_table(soup):
     current_hour = current_time.hour
     
     # Determine which sweep section based on time ranges
-    if 5 <= current_hour < 11:
+    if 5 <= current_hour < 10:
         section_start = "Morning Sweep"
-    elif 11 <= current_hour < 17:
+    elif 10 <= current_hour < 15:
         section_start = "Afternoon Sweep"
-    elif current_hour >= 17 or current_hour < 5:  # Evening includes night hours
+    elif current_hour >= 15 or current_hour < 5:  # Evening includes night hours
         section_start = "Evening Sweep"
     
     # Find all tables in the document
